@@ -15,12 +15,165 @@
 
 {% import "_includes/forms" as forms %}
 
-{% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\fields\\escapedam\\EscapeDamAsset") %}
+{#% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\fields\\escapedam\\EscapeDamAsset") %#}
 
-{{ forms.textField({
-    label: 'Some Attribute',
-    instructions: 'Enter some attribute here.',
-    id: 'someAttribute',
-    name: 'someAttribute',
-    value: field['someAttribute']})
-}}
+{% extends "_components/fieldtypes/elementfieldsettings" %}
+
+{% import "_includes/forms" as forms %}
+
+{% set fileKindOptions = field.getFileKindOptions() %}
+{% set isMatrix = 'craft\\fields\\Matrix' in craft.app.view.getNamespace() %}
+
+{% macro uploadLocationInput(name, field, inputSourceOptions) %}
+    {% from "_includes/forms" import select, text %}
+    <div class="flex">
+        <div>
+            {{ select({
+                id: name~'Source',
+                name: name~'Source',
+                options: inputSourceOptions,
+                value: field[name~'Source'],
+            }) }}
+        </div>
+        <div class="flex-grow">
+            {{ text({
+                id: name~'Subpath',
+                class: 'ltr',
+                name: name~'Subpath',
+                value: field[name~'Subpath'],
+                placeholder: "path/to/subfolder"|t('app')
+            }) }}
+        </div>
+    </div>
+{% endmacro %}
+
+{% from _self import uploadLocationInput %}
+
+{% macro enableAssetsInputField(field) %}
+    {{ forms.checkboxField({
+        label: "Enable standard Assets"|t('escapedam'),
+        id: 'enableAssetsInput-toggle',
+        name: 'enableAssetsInput',
+        class: 'enable-assets-input-cb',
+        value: 1,
+        checked: field.enableAssetsInput,
+        toggle: 'escape-dam-assets-input-settings'
+    }) }}
+{% endmacro %}
+
+{% from _self import enableAssetsInputField %}
+
+{% block fieldSettings %}
+
+    {% set damImportLocationNote = "Where should files be saved when they are imported from the DAM? Note that the subfolder path can contain variables like <code>{slug}</code> or <code>{author.username}</code>."|t('escapedam') %}
+    {% if isMatrix %}
+        {% set damImportLocationNote = damImportLocationNote|replace({
+            '{slug}': '{owner.slug}',
+            '{author.username}': '{owner.author.username}'
+        }) %}
+    {% endif %}
+
+    {{ forms.field({
+        label: "Import Location"|t('escapedam'),
+        instructions: damImportLocationNote,
+        errors: field.getErrors('damImportLocationSubpath')
+    }, uploadLocationInput('damImportLocation', field, sourceOptions)) }}
+
+    {% block fileTypesField %}
+        {{ forms.checkboxField({
+            label: "Restrict allowed file types?"|t('app'),
+            class: 'restrictFiles',
+            id: 'restrictFiles',
+            name: 'restrictFiles',
+            value: 1,
+            checked: field.restrictFiles,
+            toggle: 'restrict-allowed-types'
+        }) }}
+
+        <div id="restrict-allowed-types" class="indent{{ not field.restrictFiles ? ' hidden' }}">
+            {% for option in fileKindOptions %}
+                {{ forms.checkboxField({
+                    label: option.label,
+                    id: 'allowedKinds-'~option.value,
+                    name: 'allowedKinds[]',
+                    value: option.value,
+                    checked: (option.value in field.allowedKinds)
+                }) }}
+            {% endfor %}
+            {{ forms.errorList(field.getErrors('allowedKinds')) }}
+        </div>
+    {% endblock %}
+
+    {% filter replace(field.displayName()|lower, ('Files'|t('app'))|lower)|raw %}
+        {{ block('limitField') }}
+    {% endfilter %}
+
+    {% filter replace('Choose how the field should look for authors.'|t('app'), 'Choose how selected files should look for authors.'|t('escapedam'))|raw %}
+        {{ block('viewModeField') }}
+    {% endfilter %}
+
+    {{ forms.textField({
+        label: "Selection Label"|t('app'),
+        instructions: "Enter the text you want to appear on the Escape DAM selection input."|t('escapedam'),
+        id: 'damSelectionLabel',
+        name: 'damSelectionLabel',
+        value: field.damSelectionLabel,
+        placeholder: field.defaultDamSelectionLabel(),
+        errors: field.getErrors('damSelectionLabel')
+    }) }}
+
+    {{ forms.field({
+        label: 'Enable standard Assets input'|t('escapedam'),
+        instructions: "If checked, the user will be able to select and upload files using the standard Assets feature in addition to the Escape DAM functionality."|t('escapedam'),
+        errors: field.getErrors('enableAssetsInput')
+    }, enableAssetsInputField(field)) }}
+
+    <div id="escape-dam-assets-input-settings" class="indent{{ not field.enableAssetsInput ? ' hidden' }}">
+
+        {% block uploadLocationFields %}
+
+            {{ forms.checkboxField({
+                label: "Restrict assets uploads to a single folder?"|t('escapedam'),
+                id: 'useSingleFolder-toggle',
+                name: 'useSingleFolder',
+                class: 'use-single-folder-cb',
+                value: 1,
+                checked: field.useSingleFolder,
+                toggle: 'single-folder-settings',
+                reverseToggle: 'multi-folder-settings'
+            }) }}
+
+            {% set uploadLocationNote = "Note that the subfolder path can contain variables like <code>{slug}</code> or <code>{author.username}</code>."|t('app') %}
+            {% if isMatrix %}
+                {% set uploadLocationNote = uploadLocationNote|replace({
+                    '{slug}': '{owner.slug}',
+                    '{author.username}': '{owner.author.username}'
+                }) %}
+            {% endif %}
+
+            <div id="multi-folder-settings"{% if field.useSingleFolder %} class="hidden"{% endif %}>
+                {{ block('sourcesField') }}
+
+                {{ forms.field({
+                    label: "Default Upload Location"|t('app'),
+                    instructions: "Where should files be uploaded when they are dragged directly onto the field, or uploaded from the front end?"|t('app') ~' '~ uploadLocationNote,
+                    errors: field.getErrors('defaultUploadLocationSubpath')
+                }, uploadLocationInput('defaultUploadLocation', field, sourceOptions)) }}
+            </div>
+
+            <div id="single-folder-settings"{% if not field.useSingleFolder %} class="hidden"{% endif %}>
+                {{ forms.field({
+                    label: "Upload Location"|t('app'),
+                    instructions: uploadLocationNote,
+                    errors: field.getErrors('singleUploadLocationSubpath')
+                }, uploadLocationInput('singleUploadLocation', field, sourceOptions)) }}
+            </div>
+        {% endblock %}
+
+        {{ block('selectionLabelField') }}
+
+    </div>
+
+    {{ block('advancedSettings')|replace('escape dam', ('Files'|t('app'))|lower)|raw }}
+
+{% endblock %}

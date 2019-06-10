@@ -1,5 +1,6 @@
 <?php
 
 return [
+    'damUrl' => '',
     'jwtSecret' => '',
 ];

@@ -10,6 +10,9 @@ class Settings extends Model
 {
 
     /** @var string|null */
+    public $damUrl;
+
+    /** @var string|null */
     public $jwtSecret;
 
     /*public $volumeId = 'defaultFooValue';
