@@ -1,0 +1,26 @@
+{# @var craft \craft\web\twig\variables\CraftVariable #}
+{#
+/**
+ * Escape DAM plugin for Craft CMS
+ *
+ * EscapeDamField Field Settings
+ *
+ * @author    Værsågod
+ * @copyright Copyright (c) 2019 Værsågod
+ * @link      https://vaersaagod.no
+ * @package   EscapeDam
+ * @since     1.0.0
+ */
+#}
+
+{% import "_includes/forms" as forms %}
+
+{% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\fields\\escapedam\\EscapeDamAsset") %}
+
+{{ forms.textField({
+    label: 'Some Attribute',
+    instructions: 'Enter some attribute here.',
+    id: 'someAttribute',
+    name: 'someAttribute',
+    value: field['someAttribute']})
+}}

@@ -1,0 +1,9 @@
+#header {
+    display: none !important;
+}
+
+#content-container #content {
+    padding: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+}

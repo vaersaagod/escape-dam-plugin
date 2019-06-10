@@ -1,0 +1,13 @@
+{% extends "_layouts/cp" %}
+{% set title = 'Escape DAM'|t('escapedam') %}
+
+{% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\cpsection\\CpSectionBundle") %}
+
+{% block content %}
+
+    {% set token = craft.escapedam.getDamToken() %}
+
+    <div style="outline: 1px solid red;position:relative;top:0;left:0;width:100%;height:100%;">
+        <iframe src="http://localhost:3000/?token={{ token }}" style="width:100%;height:100%;overflow:hidden;" scrolling="no" frameborder="0"></iframe>
+    </div>
+{% endblock %}
