@@ -73,7 +73,7 @@ class EscapeDamField extends Assets
         parent::init();
         $this->settingsTemplate = 'escapedam/_components/fields/EscapeDamField_settings';
         $this->inputTemplate = 'escapedam/_components/fields/EscapeDamField_input';
-        //$this->inputJsClass = 'Craft.AssetSelectInput';
+        $this->inputJsClass = 'Craft.EscapeDam.DamSelectInput';
     }
 
     /**

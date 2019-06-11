@@ -7,7 +7,7 @@ namespace escape\escapedam\assetbundles\fields\escapedam;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 
-class EscapeDamFieldAsset extends AssetBundle
+class EscapeDamInputSelectAsset extends AssetBundle
 {
 
     // Public Methods
@@ -24,12 +24,13 @@ class EscapeDamFieldAsset extends AssetBundle
             CpAsset::class,
         ];
 
-        /*$this->js = [
-            'tourfield.js',
-        ];*/
+        $this->js = [
+            'EscapeDamSelectorModal.js',
+            'EscapeDamInputSelect.js',
+        ];
 
         $this->css = [
-            //'cpsection.css',
+            'EscapeDamInputSelect.css',
         ];
 
         parent::init();
