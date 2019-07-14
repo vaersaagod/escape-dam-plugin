@@ -4,8 +4,13 @@
 namespace escape\escapedam\assetbundles\cpsection;
 
 
+use craft\helpers\Json;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
+use craft\web\View;
+
+use escape\escapedam\EscapeDam;
+use escape\escapedam\models\Settings;
 
 class CpSectionBundle extends AssetBundle
 {
@@ -25,7 +30,7 @@ class CpSectionBundle extends AssetBundle
         ];
 
         /*$this->js = [
-            'tourfield.js',
+
         ];*/
 
         $this->css = [

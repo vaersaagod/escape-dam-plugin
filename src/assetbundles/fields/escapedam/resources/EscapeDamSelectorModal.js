@@ -11,16 +11,98 @@ if (!Craft.EscapeDam) {
 Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
     init: function (settings) {
 
-        console.log({ settings });
+        this.setSettings(settings, Craft.EscapeDam.EscapeDamSelectorModal.defaults);
 
-        this.setSettings(settings, Craft.BaseElementSelectorModal.defaults);
+        // Get DAM url and token
+        var damUrl = Craft.EscapeDam.settings.damUrl;
+        if (!damUrl) {
+            console.error('No DAM URL');
+            return;
+        }
+
+        var token = Craft.EscapeDam.settings.token;
+        if (!token) {
+            console.error('No DAM token');
+            return;
+        }
 
         // Build the modal
-        var $container = $('<div class="modal elementselectormodal"></div>').appendTo(Garnish.$bod),
-            $body = $('<div class="body"><div class="spinner big"></div></div>').appendTo($container);
+        this.$container = $('<div class="modal elementselectormodal dam-modal"></div>').appendTo(Garnish.$bod);
+        this.$body = $('<div class="body"><iframe src="' + damUrl + '?token=' + token + '&context=field" style="width:100%;height:100%;overflow:hidden;" scrolling="no" frameborder="0" /></div>').appendTo(this.$container);
 
-        this.base($container, this.settings);
-        this.$body = $body;
+        this.base(this.$container, this.settings);
 
+        // Cut the flicker, just show the nice person the modal.
+        if (this.$container) {
+            this.$container.velocity('stop');
+            this.$container.show().css('opacity', 1);
+            this.$shade.velocity('stop');
+            this.$shade.show().css('opacity', 1);
+        }
+
+        this.$iframe = this.$body.find('iframe');
+
+        // Create IE + others compatible event handler
+        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+        var eventer = window[eventMethod];
+        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+
+        // Listen to message from child window
+        eventer(messageEvent, $.proxy(function (e) {
+            var data = e.data || {};
+            var action = data.action || null;
+            switch (action) {
+                case 'select-files':
+                    var fileIds = data.fileIds || [];
+                    this.selectFiles(fileIds);
+                    break;
+                default:
+                    console.warn('Unknown action: ', action);
+            }
+        }, this), false);
+
+    },
+
+    selectFiles: function (fileIds) {
+        if (this.settings.onSelect) {
+            this.settings.onSelect(fileIds);
+        }
+        this.hide();
+    },
+
+    /**
+     * Override default logic with some extra shenanigans
+     */
+    updateSizeAndPosition: function () {
+        var containerWidth = Garnish.$win.width() - (this.settings.minGutter * 2);
+        var containerHeight = Garnish.$win.height() - (this.settings.minGutter * 2);
+        this._resizeContainer(containerWidth, containerHeight);
+    },
+
+    /**
+     * Resize the container to specified dimensions
+     * @param containerWidth
+     * @param containerHeight
+     * @private
+     */
+    _resizeContainer: function (containerWidth, containerHeight) {
+        this.$container.css({
+            'width': containerWidth,
+            'min-width': containerWidth,
+            'max-width': containerWidth,
+            'height': containerHeight,
+            'min-height': containerHeight,
+            'max-height': containerHeight,
+            'top': (Garnish.$win.height() - containerHeight) / 2,
+            'left': (Garnish.$win.width() - containerWidth) / 2
+        });
     }
-});//Craft.BaseElementSelectorModal.extend();
+}, {
+    defaults: {
+        closeOtherModals: true,
+        resizable: false,
+        minGutter: 30
+    }
+});
+
+//Craft.BaseElementSelectorModal.extend();

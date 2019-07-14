@@ -3,7 +3,6 @@
 /**
  * DAM Select input
  */
-
 if (!Craft.EscapeDam) {
     Craft.EscapeDam = {};
 }
@@ -31,14 +30,18 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
         } else {
             // Show super-awesome DAM modal
             if (!this.damModal) {
-                this.damModal = this.createDamModal();
+                this.damModal = this.createDamModal({
+                    onSelect: function (fileIds) {
+                        console.log('oh I selected some IDs, sick!', { fileIds });
+                    }
+                });
             } else {
                 this.damModal.show();
             }
         }
     },
 
-    createDamModal: function () {
-        return new Craft.EscapeDam.EscapeDamSelectorModal();
+    createDamModal: function (settings) {
+        return new Craft.EscapeDam.EscapeDamSelectorModal(settings);
     }
 });
