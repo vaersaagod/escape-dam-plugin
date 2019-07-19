@@ -15,14 +15,6 @@ class Settings extends Model
     /** @var string|null */
     public $jwtSecret;
 
-    /*public $volumeId = 'defaultFooValue';
-    public $bar = 'defaultBarValue';*/
-
-    /*public function rules()
-    {
-        return [
-            [['foo', 'bar'], 'required'],
-            // ...
-        ];
-    }*/
+    /** @var array|null */
+    public $metaDataFieldMap;
 }

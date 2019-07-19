@@ -12,7 +12,7 @@ use escape\escapedam\models\Settings;
 
 use \Firebase\JWT\JWT;
 
-class UsersService extends Component
+class Users extends Component
 {
     /**
      * @return string

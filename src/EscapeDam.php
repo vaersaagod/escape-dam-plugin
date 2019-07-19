@@ -12,7 +12,9 @@ namespace escape\escapedam;
 
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\models\Settings;
-use escape\escapedam\services\UsersService;
+use escape\escapedam\services\Api;
+use escape\escapedam\services\Files;
+use escape\escapedam\services\Users;
 use escape\escapedam\web\twig\variables\EscapeDamVariable;
 
 use Craft;
@@ -32,7 +34,9 @@ use yii\base\Event;
  * @package   EscapeDam
  * @since     1.0.0
  *
- * @property UsersService $users
+ * @property Api $api
+ * @property Files $files
+ * @property Users $users
  */
 class EscapeDam extends Plugin
 {
@@ -75,7 +79,9 @@ class EscapeDam extends Plugin
 
         // Register services
         $this->setComponents([
-            'users' => UsersService::class,
+            'api' => Api::class,
+            'files' => Files::class,
+            'users' => Users::class,
         ]);
 
         // Register fieldtype

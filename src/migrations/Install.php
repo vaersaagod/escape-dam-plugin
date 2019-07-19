@@ -63,7 +63,9 @@ class Install extends Migration
                 '{{%escapedam_importedfiles}}',
                 [
                     'id' => $this->primaryKey(),
+                    'damId' => $this->integer()->notNull()->unique(),
                     'assetId' => $this->integer()->notNull(),
+                    'settings' => $this->text(),
                     'dateCreated' => $this->dateTime()->notNull(),
                     'dateUpdated' => $this->dateTime()->notNull(),
                     'uid' => $this->uid(),
@@ -79,16 +81,16 @@ class Install extends Migration
      */
     protected function createIndexes()
     {
-//        $this->createIndex(
-//            $this->db->getIndexName(
-//                '{{%escapedam_importedfiles}}',
-//                'assetId',
-//                true
-//            ),
-//            '{{%retour_static_redirects}}',
-//            'assetId',
-//            true
-//        );
+        $this->createIndex(
+            $this->db->getIndexName(
+                '{{%escapedam_importedfiles}}',
+                'damId',
+                true
+            ),
+            '{{%escapedam_importedfiles}}',
+            'damId',
+            true
+        );
     }
 
     /**

@@ -3,4 +3,5 @@
 return [
     'damUrl' => '',
     'jwtSecret' => '',
+    'metaDataFieldMap' => [],
 ];
