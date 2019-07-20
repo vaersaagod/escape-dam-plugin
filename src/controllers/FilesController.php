@@ -1,11 +1,14 @@
 <?php
 namespace escape\escapedam\controllers;
 
+use craft\helpers\Json;
 use craft\models\Site;
 use craft\models\VolumeFolder;
 use escape\escapedam\EscapeDam;
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\helpers\FileHelper;
+use escape\escapedam\models\Settings;
+use escape\escapedam\records\ImportedFile as ImportedFileRecord;
 
 use Craft;
 use craft\db\Query;
@@ -13,7 +16,7 @@ use craft\elements\Asset;
 use craft\helpers\Assets as AssetsHelper;
 use craft\web\Controller;
 
-use escape\escapedam\models\Settings;
+
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
@@ -45,88 +48,120 @@ class FilesController extends Controller
 
         try {
 
-            // Get the upload location from the field settings
-            if (empty($folderId)) {
-                /** @var EscapeDamField $field */
-                $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
-                if (!($field instanceof EscapeDamField)) {
-                    throw new BadRequestHttpException('The field provided is not an Escape DAM field');
-                }
-                $element = $elementId ? Craft::$app->getElements()->getElementById((int)$elementId) : null;
-                $folderId = $field->resolveDynamicPathToImportFolderId($element);
-            }
-
-            if (empty($folderId)) {
-                throw new BadRequestHttpException('The target destination provided for importing is not valid');
-            }
-
             $assets = Craft::$app->getAssets();
 
-            /** @var VolumeFolder $folder */
-            $folder = $assets->findFolder(['id' => $folderId]);
+            // Has the file already been imported?
+            $assetId = (int)(new Query())
+                ->select(['assets.id'])
+                ->from('{{%assets}} AS assets')
+                ->innerJoin('{{%escapedam_importedfiles}} AS importedfiles', 'importedfiles.assetId=assets.id')
+                ->innerJoin('{{%elements}} AS elements', 'elements.id=assets.id')
+                ->where('importedfiles.damId=:damId', [':damId' => $fileId])
+                ->andWhere('elements.dateDeleted IS NULL')
+                ->scalar();
 
-            if (!$folder) {
-                throw new BadRequestHttpException('The target folder provided for importing is not valid');
-            }
+            $asset = $assetId ? $assets->getAssetById($assetId) : null;
 
-            // Get file data from the Escape DAM API
-            $fileData = EscapeDam::$plugin->api->getFileDetailsById($fileId);
-            if (!$fileData) {
-                throw new \Exception("Could not retrieve details and metadata for remote file {$fileId}");
-            }
-
-            // Download the original file
-            $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
-            FileHelper::downloadFile($fileData['url'], $tempPath);
-
-            // Get the default site – we'll create the asset here first
-            $sitesService = Craft::$app->getSites();
-            /** @var Site $defaultSite */
-            $defaultSite = $siteId ? $sitesService->getSiteById($siteId) : $sitesService->getCurrentSite();
-            $defaultSiteLocalizedData = $this->_getLocalizedDataForSite($defaultSite, $fileData['localizedData']) ?? $fileData['localizedData']['en'];
-            
-            $filename = AssetsHelper::prepareAssetName($defaultSiteLocalizedData['filename']);
-
-            $asset = new Asset();
-            $asset->tempFilePath = $tempPath;
-            $asset->filename = $filename;
-            $asset->newFolderId = $folder->id;
-            $asset->volumeId = $folder->volumeId;
-            $asset->avoidFilenameConflicts = true;
-            $asset->setScenario(Asset::SCENARIO_CREATE);
-
-            $this->_populateImportedAssetFieldValues($asset, $defaultSiteLocalizedData['fieldValues'] ?? []);
-            
-            if (!Craft::$app->getElements()->saveElement($asset)) {
-                // In case of error, let user know about it.
-                $errors = $asset->getFirstErrors();
-                return $this->asErrorJson(Craft::t('app', 'Failed to save the Asset:') . implode(";\n", $errors));
-            }
-            
-            // Propagate metadata to other sites
-            $sites = Craft::$app->getSites()->getAllSites();
-            /** @var Site $site */
-            foreach ($sites as $site) {
-                if ((int)$site->id === (int)$defaultSite->id) {
-                    continue;
+            // Nope, import it.
+            if (!$asset) {
+                // Get the upload location from the field settings
+                if (empty($folderId)) {
+                    /** @var EscapeDamField $field */
+                    $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
+                    if (!($field instanceof EscapeDamField)) {
+                        throw new BadRequestHttpException('The field provided is not an Escape DAM field');
+                    }
+                    $element = $elementId ? Craft::$app->getElements()->getElementById((int)$elementId) : null;
+                    $folderId = $field->resolveDynamicPathToImportFolderId($element);
                 }
-                $language = $site->language;
-                $localizedData = $this->_getLocalizedDataForSite($site, $fileData['localizedData']);
-                if (!$localizedData) {
-                    continue;
+
+                if (empty($folderId)) {
+                    throw new BadRequestHttpException('The target destination provided for importing is not valid');
                 }
-                $siteAsset = Craft::$app->getAssets()->getAssetById($asset->id, $site->id);
-                if (!$siteAsset) {
-                    throw new \Exception("Could not get Asset {$asset->id} for site {$site->id}");
+
+                /** @var VolumeFolder $folder */
+                $folder = $assets->findFolder(['id' => $folderId]);
+
+                if (!$folder) {
+                    throw new BadRequestHttpException('The target folder provided for importing is not valid');
                 }
-                $this->_populateImportedAssetFieldValues($siteAsset, $localizedData['fieldValues'] ?? []);
-                Craft::$app->getElements()->saveElement($siteAsset, false, false);
+
+                // Get file data from the Escape DAM API
+                $fileData = EscapeDam::$plugin->api->getFileDetailsById($fileId);
+                if (!$fileData) {
+                    throw new \Exception("Could not retrieve details and metadata for remote file {$fileId}");
+                }
+
+                // Download the original file
+                $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
+                FileHelper::downloadFile($fileData['url'], $tempPath);
+
+                // Get the default site – we'll create the asset here first
+                $sitesService = Craft::$app->getSites();
+                /** @var Site $defaultSite */
+                $defaultSite = $siteId ? $sitesService->getSiteById($siteId) : $sitesService->getCurrentSite();
+                $defaultSiteLocalizedData = $this->_getLocalizedDataForSite($defaultSite, $fileData['localizedData']) ?? $fileData['localizedData']['en'];
+
+                $filename = AssetsHelper::prepareAssetName($defaultSiteLocalizedData['filename']);
+
+                $asset = new Asset();
+                $asset->tempFilePath = $tempPath;
+                $asset->filename = $filename;
+                $asset->newFolderId = $folder->id;
+                $asset->volumeId = $folder->volumeId;
+                $asset->avoidFilenameConflicts = true;
+                $asset->setScenario(Asset::SCENARIO_CREATE);
+
+                $this->_populateImportedAssetFieldValues($asset, $defaultSiteLocalizedData['fieldValues'] ?? []);
+
+                if (!Craft::$app->getElements()->saveElement($asset)) {
+                    // In case of error, let user know about it.
+                    $errors = $asset->getFirstErrors();
+                    return $this->asErrorJson(Craft::t('app', 'Failed to save the Asset:') . implode(";\n", $errors));
+                }
+
+                // Create a ImportedFile record to keep track of this Asset
+                $importedFileRecord = new ImportedFileRecord();
+                $importedFileRecord->assetId = $asset->id;
+                $importedFileRecord->damId = $fileId;
+                $importedFileRecord->settings = Json::encode($fileData);
+
+                $transaction = Craft::$app->getDb()->beginTransaction();
+                try {
+                    if (!$importedFileRecord->save()) {
+                        throw new \Exception("Could not save imported file record for Asset {$asset->id}.");
+                    }
+                    $transaction->commit();
+                } catch (\Throwable $e) {
+                    $transaction->rollBack();
+                    throw $e;
+                }
+
+                // Propagate Asset metadata to other sites
+                $sites = Craft::$app->getSites()->getAllSites();
+                /** @var Site $site */
+                foreach ($sites as $site) {
+                    if ((int)$site->id === (int)$defaultSite->id) {
+                        continue;
+                    }
+                    $language = $site->language;
+                    $localizedData = $this->_getLocalizedDataForSite($site, $fileData['localizedData']);
+                    if (!$localizedData) {
+                        continue;
+                    }
+                    $siteAsset = Craft::$app->getAssets()->getAssetById($asset->id, $site->id);
+                    if (!$siteAsset) {
+                        throw new \Exception("Could not get Asset {$asset->id} for site {$site->id}");
+                    }
+                    $this->_populateImportedAssetFieldValues($siteAsset, $localizedData['fieldValues'] ?? []);
+                    Craft::$app->getElements()->saveElement($siteAsset, false, false);
+                }
             }
 
             return $this->asJson([
                 'success' => true,
                 'filename' => $asset->filename,
-                'assetId' => $asset->id
+                'assetId' => (int)$asset->id
             ]);
 
         } catch (\Throwable $e) {

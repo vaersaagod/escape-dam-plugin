@@ -74,10 +74,21 @@ class EscapeDamField extends Assets
     public function init()
     {
         parent::init();
-        $this->damImportLocationSource = $this->_folderSourceToVolumeSource($this->damImportLocationSource);
+
         $this->settingsTemplate = 'escapedam/_components/fields/EscapeDamField_settings';
         $this->inputTemplate = 'escapedam/_components/fields/EscapeDamField_input';
         $this->inputJsClass = 'Craft.EscapeDam.DamSelectInput';
+
+        $this->damImportLocationSource = $this->_folderSourceToVolumeSource($this->damImportLocationSource);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsHtml()
+    {
+        $this->damImportLocationSource = $this->_volumeSourceToFolderSource($this->damImportLocationSource);
+        return parent::getSettingsHtml();
     }
 
     /**
@@ -126,6 +137,25 @@ class EscapeDamField extends Assets
             }
         }
 
+        return (string)$sourceKey;
+    }
+
+    /**
+     * Convert a volume:UID source key to a folder:UID source key.
+     *
+     * @param mixed $sourceKey
+     * @return string
+     */
+    private function _volumeSourceToFolderSource($sourceKey): string
+    {
+        if ($sourceKey && is_string($sourceKey) && strpos($sourceKey, 'volume:') === 0) {
+            $parts = explode(':', $sourceKey);
+            /** @var Volume|null $volume */
+            $volume = Craft::$app->getVolumes()->getVolumeByUid($parts[1]);
+            if ($volume && $folder = Craft::$app->getAssets()->getRootFolderByVolumeId($volume->id)) {
+                return 'folder:' . $folder->uid;
+            }
+        }
         return (string)$sourceKey;
     }
 

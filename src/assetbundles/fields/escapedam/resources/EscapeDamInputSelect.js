@@ -40,6 +40,15 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
     },
 
     onDamModalSelect: function (fileIds) {
+
+        /*if (this.settings.limit) {
+            // Cut off any excess elements
+            var slotsLeft = this.settings.limit - this.$elements.length;
+            if (fileIds.length > slotsLeft) {
+                fileIds = fileIds.slice(0, slotsLeft);
+            }
+        }*/
+
         this._importFiles(fileIds);
 
         this.progressBar.$progressBar.css({
@@ -49,13 +58,6 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
         this.$container.addClass('uploading');
         this.progressBar.resetProgressBar();
         this.progressBar.showProgressBar();
-
-        for (var i = 0; i < fileIds.length; ++i) {
-            var fileId = parseInt(fileIds[i], 10);
-            setTimeout(function () {
-
-            }, 1500);
-        }
     },
 
     _importFiles: function (fileIds) {
@@ -63,9 +65,6 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
         if (!fileIds || !fileIds.length) {
             return;
         }
-
-        this.fileIdsToImport = fileIds;
-        this.importedFiles = [];
 
         this.progressBar.$progressBar.css({
             top: Math.round(this.$container.outerHeight() / 2) - 6
@@ -75,28 +74,73 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
         this.progressBar.resetProgressBar();
         this.progressBar.showProgressBar();
 
+        this.fileIdsToImport = fileIds;
         this._importFile(this.fileIdsToImport.shift());
 
     },
 
     _importFile: function (fileId) {
-        console.log('import file', this.fileIdsToImport);
+
         this.progressBar.setProgressPercentage(0);
+
         Craft.postActionRequest('escapedam/files/import-file', {
             fileId: fileId,
             fieldId: this.settings.fieldId,
             elementId: this.settings.sourceElementId,
             siteId: this.settings.criteria.siteId
-        }, $.proxy(function (response) {
-            console.log({ response }, this.fileIdsToImport);
-            this.importedFiles.push(fileId);
-            if (this.fileIdsToImport.length) {
-                this._importFile(this.fileIdsToImport.shift());
+        }, function(response) {
+            var assetId = response.success && response.assetId ? parseInt(response.assetId, 10) : null;
+            if (assetId) {
+                // Check if – somehow – this Asset was already selected
+                var selectedAssets = this.$elements.get();
+                var isSelected = false;
+                for (var i = 0; i < selectedAssets.length; ++i) {
+                    if (parseInt($(selectedAssets[i]).data('id'), 10) === assetId) {
+                        isSelected = true;
+                        break;
+                    }
+                }
+                if (isSelected) {
+                    this._onImportComplete();
+                    return;
+                }
+                Craft.postActionRequest('elements/get-element-html', {
+                    elementId: assetId,
+                    siteId: this.settings.criteria.siteId,
+                    size: this.settings.viewMode
+                }, function(data) {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        var html = $(data.html);
+                        Craft.appendHeadHtml(data.headHtml);
+                        this.selectUploadedFile(Craft.getElementInfo(html));
+                    }
+                    this._onImportComplete();
+                }.bind(this));
             } else {
-                this.progressBar.hideProgressBar();
-                this.$container.removeClass('uploading');
+                alert(response.error || 'Something went wrong');
+                console.log(response);
+                this._onImportComplete();
             }
-        }, this));
+        }.bind(this));
+    },
+
+    _onImportComplete: function () {
+        // Last file?
+        if (this.fileIdsToImport.length) {
+            this._importFile(this.fileIdsToImport.shift());
+        } else {
+            this.progressBar.hideProgressBar();
+            this.$container.removeClass('uploading');
+            if (window.draftEditor) {
+                window.draftEditor.checkForm();
+            }
+            try {
+                this.$addElementBtn.focus();
+            } catch (error) {}
+        }
+        Craft.cp.runQueue();
     },
 
     // onModalSelect: function(elements) {

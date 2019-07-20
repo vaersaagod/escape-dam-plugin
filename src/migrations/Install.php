@@ -63,7 +63,7 @@ class Install extends Migration
                 '{{%escapedam_importedfiles}}',
                 [
                     'id' => $this->primaryKey(),
-                    'damId' => $this->integer()->notNull()->unique(),
+                    'damId' => $this->integer()->notNull(),
                     'assetId' => $this->integer()->notNull(),
                     'settings' => $this->text(),
                     'dateCreated' => $this->dateTime()->notNull(),
@@ -85,11 +85,11 @@ class Install extends Migration
             $this->db->getIndexName(
                 '{{%escapedam_importedfiles}}',
                 'damId',
-                true
+                false
             ),
             '{{%escapedam_importedfiles}}',
             'damId',
-            true
+            false
         );
     }
 
