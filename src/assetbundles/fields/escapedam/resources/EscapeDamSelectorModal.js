@@ -28,7 +28,7 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
 
         // Build the modal
         this.$container = $('<div class="modal elementselectormodal dam-modal"></div>').appendTo(Garnish.$bod);
-        this.$body = $('<div class="body"><iframe src="' + damUrl + '?token=' + token + '&context=field" style="width:100%;height:100%;overflow:hidden;" scrolling="no" frameborder="0" /></div>').appendTo(this.$container);
+        this.$body = $('<div class="body"><iframe src="' + damUrl + '?token=' + token + '&context=field&storageKey=' + this.settings.storageKey +'" style="width:100%;height:100%;overflow:hidden;" scrolling="no" frameborder="0" /></div>').appendTo(this.$container);
 
         this.base(this.$container, this.settings);
 

@@ -11,11 +11,9 @@ use escape\escapedam\models\Settings;
 use escape\escapedam\records\ImportedFile as ImportedFileRecord;
 
 use Craft;
-use craft\db\Query;
 use craft\elements\Asset;
 use craft\helpers\Assets as AssetsHelper;
 use craft\web\Controller;
-
 
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
@@ -27,12 +25,16 @@ class FilesController extends Controller
         'nb' => ['nb-NO', 'nn', 'nn-NO', 'no'],
     ];
 
+    /**
+     * @return Response
+     * @throws BadRequestHttpException
+     */
     public function actionImportFile(): Response
     {
 
-//        $this->requireCpRequest();
-//        $this->requirePostRequest();
-//        $this->requireAcceptsJson();
+        $this->requireCpRequest();
+        $this->requirePostRequest();
+        $this->requireAcceptsJson();
 
         $request = Craft::$app->getRequest();
 
@@ -48,22 +50,14 @@ class FilesController extends Controller
 
         try {
 
-            $assets = Craft::$app->getAssets();
-
             // Has the file already been imported?
-            $assetId = (int)(new Query())
-                ->select(['assets.id'])
-                ->from('{{%assets}} AS assets')
-                ->innerJoin('{{%escapedam_importedfiles}} AS importedfiles', 'importedfiles.assetId=assets.id')
-                ->innerJoin('{{%elements}} AS elements', 'elements.id=assets.id')
-                ->where('importedfiles.damId=:damId', [':damId' => $fileId])
-                ->andWhere('elements.dateDeleted IS NULL')
-                ->scalar();
-
-            $asset = $assetId ? $assets->getAssetById($assetId) : null;
+            $asset = EscapeDam::$plugin->files->getImportedAssetByDamFileId($fileId);
 
             // Nope, import it.
             if (!$asset) {
+
+                $assets = Craft::$app->getAssets();
+
                 // Get the upload location from the field settings
                 if (empty($folderId)) {
                     /** @var EscapeDamField $field */
@@ -122,7 +116,7 @@ class FilesController extends Controller
 
                 // Create a ImportedFile record to keep track of this Asset
                 $importedFileRecord = new ImportedFileRecord();
-                $importedFileRecord->assetId = $asset->id;
+                $importedFileRecord->assetId = (int)$asset->id;
                 $importedFileRecord->damId = $fileId;
                 $importedFileRecord->settings = Json::encode($fileData);
 
@@ -144,7 +138,6 @@ class FilesController extends Controller
                     if ((int)$site->id === (int)$defaultSite->id) {
                         continue;
                     }
-                    $language = $site->language;
                     $localizedData = $this->_getLocalizedDataForSite($site, $fileData['localizedData']);
                     if (!$localizedData) {
                         continue;
@@ -170,6 +163,11 @@ class FilesController extends Controller
             return $this->asErrorJson($e->getMessage());
         }
         
+    }
+
+    public function actionGetEditorHtml()
+    {
+        return 1;
     }
 
     /**

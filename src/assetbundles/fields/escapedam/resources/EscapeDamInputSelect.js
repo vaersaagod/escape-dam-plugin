@@ -14,6 +14,7 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
     super: Craft.AssetSelectInput.prototype,
 
     damModal: null,
+    disabledFileIds: null,
 
     init: function () {
         this.super.init.apply(this, arguments);
@@ -29,13 +30,11 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
             this.super.showModal.apply(this, arguments);
         } else {
             // Show super-awesome DAM modal
-            if (!this.damModal) {
-                this.damModal = this.createDamModal({
-                    onSelect: $.proxy(this.onDamModalSelect, this)
-                });
-            } else {
-                this.damModal.show();
-            }
+            this.damModal = this.createDamModal({
+                storageKey: window.location.href + '.' + this.settings.fieldId,
+                onSelect: $.proxy(this.onDamModalSelect, this),
+                disabledFileIds: null // TODO
+            });
         }
     },
 
