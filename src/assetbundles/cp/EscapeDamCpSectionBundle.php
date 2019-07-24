@@ -1,7 +1,7 @@
 <?php
 
 
-namespace escape\escapedam\assetbundles\cpsection;
+namespace escape\escapedam\assetbundles\cp;
 
 
 use craft\helpers\Json;
@@ -12,7 +12,7 @@ use craft\web\View;
 use escape\escapedam\EscapeDam;
 use escape\escapedam\models\Settings;
 
-class CpSectionBundle extends AssetBundle
+class EscapeDamCpSectionBundle extends AssetBundle
 {
 
     // Public Methods
@@ -23,7 +23,7 @@ class CpSectionBundle extends AssetBundle
      */
     public function init()
     {
-        $this->sourcePath = "@escape/escapedam/assetbundles/cpsection/resources";
+        $this->sourcePath = "@escape/escapedam/assetbundles/cp/resources";
 
         $this->depends = [
             CpAsset::class,

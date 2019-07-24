@@ -10,9 +10,7 @@
 
 namespace escape\escapedam;
 
-use craft\events\TemplateEvent;
-use craft\web\View;
-use escape\escapedam\assetbundles\fields\escapedam\EscapeDamCpAsset;
+use escape\escapedam\assetbundles\cp\EscapeDamCpAssetBundle;
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\models\Settings;
 use escape\escapedam\services\Api;
@@ -24,9 +22,11 @@ use Craft;
 use craft\base\Plugin;
 use craft\events\PluginEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\TemplateEvent;
 use craft\services\Fields;
 use craft\services\Plugins;
 use craft\web\twig\variables\CraftVariable;
+use craft\web\View;
 
 use yii\base\Event;
 use yii\base\InvalidConfigException;
@@ -115,7 +115,7 @@ class EscapeDam extends Plugin
                 View::EVENT_BEFORE_RENDER_TEMPLATE,
                 function (TemplateEvent $event) {
                     try {
-                        Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
+                        Craft::$app->getView()->registerAssetBundle(EscapeDamCpAssetBundle::class);
                     } catch (InvalidConfigException $e) {
                         Craft::error(
                             'Error registering AssetBundle - '.$e->getMessage(),

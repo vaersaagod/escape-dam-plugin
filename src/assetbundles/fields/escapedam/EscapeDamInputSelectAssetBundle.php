@@ -9,7 +9,7 @@ use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 use craft\web\View;
 
-class EscapeDamInputSelectAsset extends AssetBundle
+class EscapeDamInputSelectAssetBundle extends AssetBundle
 {
 
     // Public Methods

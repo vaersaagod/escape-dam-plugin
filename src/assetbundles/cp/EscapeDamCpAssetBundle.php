@@ -10,7 +10,7 @@ use craft\web\View;
 use escape\escapedam\EscapeDam;
 use escape\escapedam\models\Settings;
 
-class EscapeDamCpAsset extends AssetBundle
+class EscapeDamCpAssetBundle extends AssetBundle
 {
 
     // Public Methods
@@ -21,7 +21,8 @@ class EscapeDamCpAsset extends AssetBundle
      */
     public function init()
     {
-        $this->sourcePath = "@escape/escapedam/assetbundles/fields/escapedam/resources";
+
+        $this->sourcePath = "@escape/escapedam/assetbundles/cp/resources";
 
         $this->depends = [
             CpAsset::class,
