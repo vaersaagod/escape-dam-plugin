@@ -1,6 +1,7 @@
 <?php
 namespace escape\escapedam\controllers;
 
+use craft\helpers\Db;
 use craft\helpers\Json;
 use craft\models\Site;
 use craft\models\VolumeFolder;
@@ -38,20 +39,16 @@ class FilesController extends Controller
 
         $request = Craft::$app->getRequest();
 
-        $fileId = $request->getRequiredParam('fileId');
-        $folderId = (int)$request->getParam('folderId');
-        $fieldId = (int)$request->getParam('fieldId');
-        $siteId = (int)$request->getParam('siteId');
-        $elementId = (int)$request->getParam('elementId');
-
-        if (empty($folderId) && (empty($fieldId) || empty($elementId))) {
-            throw new BadRequestHttpException('No target destination provided for importing');
-        }
-
+        $fileId = (int)$request->getRequiredParam('fileId');
+        $folderId = (int)$request->getParam('folderId') ?: null;
+        $fieldId = (int)$request->getParam('fieldId') ?: null;
+        $siteId = (int)$request->getParam('siteId') ?: null;
+        $elementId = (int)$request->getParam('elementId') ?: null;
+        
         try {
 
             // Has the file already been imported?
-            $asset = EscapeDam::$plugin->files->getImportedAssetByDamFileId($fileId);
+            $asset = EscapeDam::$plugin->files->getImportedAsset($fileId, $fieldId, $elementId);
 
             // Nope, import it.
             if (!$asset) {
@@ -59,7 +56,7 @@ class FilesController extends Controller
                 $assets = Craft::$app->getAssets();
 
                 // Get the upload location from the field settings
-                if (empty($folderId)) {
+                if (!$folderId) {
                     /** @var EscapeDamField $field */
                     $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
                     if (!($field instanceof EscapeDamField)) {
@@ -69,7 +66,7 @@ class FilesController extends Controller
                     $folderId = $field->resolveDynamicPathToImportFolderId($element);
                 }
 
-                if (empty($folderId)) {
+                if (!$folderId) {
                     throw new BadRequestHttpException('The target destination provided for importing is not valid');
                 }
 
@@ -88,7 +85,7 @@ class FilesController extends Controller
 
                 // Download the original file
                 $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
-                FileHelper::downloadFile($fileData['url'], $tempPath);
+                FileHelper::downloadFile($fileData['imageUrl'] ?? $fileData['url'], $tempPath);
 
                 // Get the default site – we'll create the asset here first
                 $sitesService = Craft::$app->getSites();
@@ -114,11 +111,14 @@ class FilesController extends Controller
                     return $this->asErrorJson(Craft::t('app', 'Failed to save the Asset:') . implode(";\n", $errors));
                 }
 
-                // Create a ImportedFile record to keep track of this Asset
+                // Create a ImportedFileRecord to keep track of this Asset
                 $importedFileRecord = new ImportedFileRecord();
                 $importedFileRecord->assetId = (int)$asset->id;
                 $importedFileRecord->damId = $fileId;
+                $importedFileRecord->fieldId = $fieldId;
+                $importedFileRecord->sourceElementId = $elementId;
                 $importedFileRecord->settings = Json::encode($fileData);
+                $importedFileRecord->dateSynced = Db::prepareDateForDb(new \DateTime());
 
                 $transaction = Craft::$app->getDb()->beginTransaction();
                 try {

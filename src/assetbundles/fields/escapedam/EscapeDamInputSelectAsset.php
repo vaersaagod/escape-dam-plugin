@@ -1,18 +1,15 @@
 <?php
+namespace escape\escapedam\assetbundles\fields\escapedam;
 
-
-namespace escape\escapedam\assetbundles\cp;
-
+use escape\escapedam\EscapeDam;
+use escape\escapedam\models\Settings;
 
 use craft\helpers\Json;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 use craft\web\View;
 
-use escape\escapedam\EscapeDam;
-use escape\escapedam\models\Settings;
-
-class EscapeDamCpSectionBundle extends AssetBundle
+class EscapeDamInputSelectAsset extends AssetBundle
 {
 
     // Public Methods
@@ -23,18 +20,19 @@ class EscapeDamCpSectionBundle extends AssetBundle
      */
     public function init()
     {
-        $this->sourcePath = "@escape/escapedam/assetbundles/cp/resources";
+        $this->sourcePath = "@escape/escapedam/assetbundles/fields/escapedam/resources";
 
         $this->depends = [
             CpAsset::class,
         ];
 
-        /*$this->js = [
-
-        ];*/
+        $this->js = [
+            'EscapeDamSelectorModal.js',
+            'EscapeDamInputSelect.js',
+        ];
 
         $this->css = [
-            'cpsection.css',
+            'EscapeDamInputSelect.css',
         ];
 
         parent::init();

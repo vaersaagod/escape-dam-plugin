@@ -1,7 +1,7 @@
 {% extends "_layouts/cp" %}
 {% set title = 'Escape DAM'|t('escapedam') %}
 
-{% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\cpsection\\CpSectionBundle") %}
+{% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\cp\\EscapeDamCpSectionAsset") %}
 
 {% block content %}
     {% set url = craft.escapedam.getDamUrl() %}

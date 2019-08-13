@@ -13,9 +13,39 @@
 
     var fnLoadHud = Craft.BaseElementEditor.prototype.loadHud;
     Craft.BaseElementEditor.prototype.loadHud = function () {
-        // TODO check if element is an asset, if it's got a DAM file ID – if it does, load our augmented element editor. If not, proceed as usual
-        console.log(this.$element.data());
-        fnLoadHud.apply(this, arguments);
+        var type = this.$element.data('type');
+        if (type !== 'craft\\elements\\Asset') {
+            fnLoadHud.apply(this, arguments);
+            return;
+        }
+        // Open our custom Asset modal
+        this.onBeginLoading();
+        var data = this.getBaseData();
+        data.includeSites = this.settings.showSiteSwitcher;
+        Craft.postActionRequest('escapedam/elements/get-editor-html', data, $.proxy(this, 'showHud'));
     }
+
+    var fnReloadForm = Craft.BaseElementEditor.prototype.reloadForm;
+    Craft.BaseElementEditor.prototype.reloadForm = function (data, callback) {
+
+        var type = this.$element.data('type');
+
+        if (type !== 'craft\\elements\\Asset') {
+            fnReloadForm.apply(this, arguments);
+            return;
+        }
+
+        data = $.extend(this.getBaseData(), data);
+
+        Craft.postActionRequest('escapedam/elements/get-editor-html', data, $.proxy(function(response, textStatus) {
+            if (textStatus === 'success') {
+                this.updateForm(response);
+            }
+
+            if (callback) {
+                callback(textStatus);
+            }
+        }, this));
+    };
 
 })();

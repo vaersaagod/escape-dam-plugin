@@ -76,6 +76,8 @@ class Api extends Component
             $data = \array_merge($data, [
                 'id' => (int)$body['id'],
                 'url' => $body['assetUrl'],
+                'imageUrl' => $body['imageUrl'],
+                'thumbUrl' => $body['thumbUrl'],
                 'extension' => $body['extension'],
                 'dateCreated' => $body['dateCreated'],
                 'dateUpdated' => $body['dateUpdated'],

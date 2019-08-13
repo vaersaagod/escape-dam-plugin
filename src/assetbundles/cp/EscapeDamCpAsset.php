@@ -1,7 +1,7 @@
 <?php
 
 
-namespace escape\escapedam\assetbundles\fields\escapedam;
+namespace escape\escapedam\assetbundles\cp;
 
 use craft\helpers\Json;
 use craft\web\AssetBundle;
@@ -10,7 +10,7 @@ use craft\web\View;
 use escape\escapedam\EscapeDam;
 use escape\escapedam\models\Settings;
 
-class EscapeDamCpAssetBundle extends AssetBundle
+class EscapeDamCpAsset extends AssetBundle
 {
 
     // Public Methods
@@ -29,7 +29,7 @@ class EscapeDamCpAssetBundle extends AssetBundle
         ];
 
         $this->js = [
-            'EscapeDamElementEditor.js',
+            //'EscapeDamElementEditor.js',
         ];
 
         $this->css = [

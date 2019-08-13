@@ -10,7 +10,9 @@
 
 namespace escape\escapedam;
 
-use escape\escapedam\assetbundles\cp\EscapeDamCpAssetBundle;
+use craft\events\ElementEvent;
+use craft\services\Elements;
+use escape\escapedam\assetbundles\cp\EscapeDamCpAsset;
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\models\Settings;
 use escape\escapedam\services\Api;
@@ -19,12 +21,17 @@ use escape\escapedam\services\Users;
 use escape\escapedam\web\twig\variables\EscapeDamVariable;
 
 use Craft;
+use craft\base\Element;
 use craft\base\Plugin;
+use craft\elements\Asset;
+use craft\elements\db\ElementQuery;
+use craft\events\PopulateElementEvent;
 use craft\events\PluginEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\TemplateEvent;
 use craft\services\Fields;
 use craft\services\Plugins;
+use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 
@@ -107,31 +114,82 @@ class EscapeDam extends Plugin
             }
         );
 
-        // Register Asset bundles
-        $request = Craft::$app->getRequest();
-        if ($request->getIsCpRequest() && !$request->getIsConsoleRequest()) {
-            Event::on(
-                View::class,
-                View::EVENT_BEFORE_RENDER_TEMPLATE,
-                function (TemplateEvent $event) {
-                    try {
-                        Craft::$app->getView()->registerAssetBundle(EscapeDamCpAssetBundle::class);
-                    } catch (InvalidConfigException $e) {
-                        Craft::error(
-                            'Error registering AssetBundle - '.$e->getMessage(),
-                            __METHOD__
-                        );
-                    }
-                }
-            );
-        }
-
         Event::on(
             Plugins::class,
             Plugins::EVENT_AFTER_INSTALL_PLUGIN,
             function (PluginEvent $event) {
                 if ($event->plugin === $this) {
                 }
+            }
+        );
+
+        Event::on(
+            Plugins::class,
+            Plugins::EVENT_AFTER_LOAD_PLUGINS,
+            function () {
+                
+                // Register Asset bundles
+                $request = Craft::$app->getRequest();
+                $user = Craft::$app->getUser()->getIdentity();
+                if (!$request->getIsCpRequest() || $request->getIsConsoleRequest() || !$user || !$user->can('accessCp')) {
+                    return;
+                }
+
+                Event::on(
+                    View::class,
+                    View::EVENT_BEFORE_RENDER_TEMPLATE,
+                    function (TemplateEvent $event) {
+                        try {
+                            Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
+                        } catch (InvalidConfigException $e) {
+                            Craft::error(
+                                'Error registering AssetBundle - '.$e->getMessage(),
+                                __METHOD__
+                            );
+                        }
+                    }
+                );
+
+                Event::on(
+                    Elements::class,
+                    Elements::EVENT_AFTER_SAVE_ELEMENT,
+                    function (ElementEvent $event) {
+                        /** @var Element $element */
+                        $element = $event->element;
+                        // Get any DAM fields associated with this element, and make sure imported Asset records for this element is updated with the element's ID
+                        if (!$fieldLayout = $element->getFieldLayout()) {
+                            return;
+                        }
+                        $fields = $fieldLayout->getFields();
+                        foreach ($fields as $field) {
+                            if (!$field instanceof EscapeDamField) {
+                                continue;
+                            }
+                            $fieldHandle = $field->handle;
+                            $assetIds = $element->$fieldHandle->ids();
+                            if (empty($assetIds)) {
+                                continue;
+                            }
+                            try {
+                                EscapeDam::$plugin->files->relateImportedAssetToElement($assetIds, (int)$field->id, (int)$element->id);
+                            } catch (\Throwable $e) {
+                                Craft::$app->getErrorHandler()->logException($e);
+                            }
+                        }
+                    }
+                );
+
+                /**
+                 * Attach a behavior after an Asset has been loaded from the database (populated).
+                 */
+                /*Event::on(ElementQuery::class, ElementQuery::EVENT_AFTER_POPULATE_ELEMENT, function(PopulateElementEvent $event) {
+                    /** @var Element $element */
+                    /*$element = $event->element;
+                    if (!$element instanceof Asset) {
+                        return;
+                    }
+                    $element->attachBehavior('escapeDamAssetBehavior', AssetBehaviour::class);
+                });*/
             }
         );
 

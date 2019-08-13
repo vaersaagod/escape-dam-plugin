@@ -64,8 +64,11 @@ class Install extends Migration
                 [
                     'id' => $this->primaryKey(),
                     'damId' => $this->integer()->notNull(),
+                    'fieldId' => $this->integer()->notNull(),
                     'assetId' => $this->integer()->notNull(),
+                    'sourceElementId' => $this->integer()->null(),
                     'settings' => $this->text(),
+                    'dateSynced' => $this->dateTime()->notNull(),
                     'dateCreated' => $this->dateTime()->notNull(),
                     'dateUpdated' => $this->dateTime()->notNull(),
                     'uid' => $this->uid(),
@@ -103,6 +106,24 @@ class Install extends Migration
             '{{%escapedam_importedfiles}}',
             'assetId',
             '{{%assets}}',
+            'id',
+            'CASCADE',
+            'CASCADE'
+        );
+        $this->addForeignKey(
+            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'fieldId'),
+            '{{%escapedam_importedfiles}}',
+            'fieldId',
+            '{{%fields}}',
+            'id',
+            'CASCADE',
+            'CASCADE'
+        );
+        $this->addForeignKey(
+            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'sourceElementId'),
+            '{{%escapedam_importedfiles}}',
+            'sourceElementId',
+            '{{%elements}}',
             'id',
             'CASCADE',
             'CASCADE'

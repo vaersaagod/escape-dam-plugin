@@ -27,6 +27,15 @@
 
 <div id="{{ id }}" class="elementselect" style="display: flex;flex-wrap:wrap;width: 100%;">
     <div class="elements" style="width: 100%;flex: 0 0 auto;">
+        {#% set elementsHtml %}
+            {% for element in elements %}
+                {% include "_elements/element" with {
+                    context: 'field',
+                    size: (viewMode == 'large' ? 'large' : 'small')
+                } %}
+            {% endfor %}
+        {% endset %}
+        {{ elementsHtml|replace({ 'data-image-width': 'data-foo="bar" data-image-width'})|raw }#}
         {% for element in elements %}
             {% include "_elements/element" with {
                 context: 'field',

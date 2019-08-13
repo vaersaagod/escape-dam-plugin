@@ -13,7 +13,10 @@ use craft\db\ActiveRecord;
  * @property $id
  * @property $damId
  * @property $assetId
+ * @property $fieldId
+ * @property $sourceElementId
  * @property $settings
+ * @property $dateSynced
  */
 class ImportedFile extends ActiveRecord
 {
