@@ -49,8 +49,8 @@
 {% from _self import uploadLocationInput %}
 
 {% macro enableAssetsInputField(field) %}
-    {% from "_includes/forms" import select, text %}
-    {{ forms.checkboxField({
+    {% from "_includes/forms" import checkboxField %}
+    {{ checkboxField({
         label: "Enable standard Assets"|t('escapedam'),
         id: 'enableAssetsInput-toggle',
         name: 'enableAssetsInput',
