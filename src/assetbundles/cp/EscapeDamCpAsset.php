@@ -30,10 +30,11 @@ class EscapeDamCpAsset extends AssetBundle
 
         $this->js = [
             //'EscapeDamElementEditor.js',
+            'EscapeDamAssetEditor.js',
         ];
 
         $this->css = [
-
+            'escape-dam-asset-editor.css',
         ];
 
         parent::init();

@@ -165,11 +165,6 @@ class FilesController extends Controller
         
     }
 
-    public function actionGetEditorHtml()
-    {
-        return 1;
-    }
-
     /**
      * Grabs localized data from raw data array, using the local LANGUAGE_CODE_MAP constant to map different language codes to the same DAM language
      *
