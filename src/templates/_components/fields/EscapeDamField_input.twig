@@ -27,15 +27,6 @@
 
 <div id="{{ id }}" class="elementselect" style="display: flex;flex-wrap:wrap;width: 100%;">
     <div class="elements" style="width: 100%;flex: 0 0 auto;">
-        {#% set elementsHtml %}
-            {% for element in elements %}
-                {% include "_elements/element" with {
-                    context: 'field',
-                    size: (viewMode == 'large' ? 'large' : 'small')
-                } %}
-            {% endfor %}
-        {% endset %}
-        {{ elementsHtml|replace({ 'data-image-width': 'data-foo="bar" data-image-width'})|raw }#}
         {% for element in elements %}
             {% include "_elements/element" with {
                 context: 'field',
@@ -44,10 +35,10 @@
         {% endfor %}
     </div>
     {# Select from DAM #}
-    <div class="btn add icon dashed" data-input="dam">{{ damSelectionLabel }}</div>
+    <div class="btn add icon dashed escapedam" data-input="dam">{{ damSelectionLabel }}</div>
     {# Select from Assets #}
     {% if enableAssetsInput %}
-        <div class="btn add icon dashed" data-input="assets">{{ selectionLabel }}</div>
+        <div class="btn add icon dashed escapedam" data-input="assets">{{ selectionLabel }}</div>
     {% endif %}
 </div>
 

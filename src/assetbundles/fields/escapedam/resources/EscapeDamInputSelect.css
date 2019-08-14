@@ -5,3 +5,7 @@
 .dam-modal .body {
     padding: 0;
 }
+
+.btn.add.icon.dashed.escapedam {
+    position: relative !important;
+}
