@@ -175,6 +175,9 @@ class EscapeDamField extends Assets
         /** @var Element $element */
         $importVolume = $this->damImportLocationSource;
         $subpath = $this->damImportLocationSubpath;
+        if (!$subpath || !\strlen($subpath)) {
+            $subpath = \strtolower($this->handle) . '-' . $this->id . '/' . date('Ymdhis');
+        }
         $settingName = Craft::t('escapedam', 'Import Location');
         $assets = Craft::$app->getAssets();
         try {
