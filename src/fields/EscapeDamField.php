@@ -9,9 +9,11 @@ use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\base\Volume;
 use craft\elements\db\ElementQuery;
+use craft\errors\InvalidSubpathException;
 use craft\fields\Assets;
 use craft\helpers\Template;
 use craft\helpers\FileHelper;
+
 use yii\base\InvalidConfigException;
 
 class EscapeDamField extends Assets
