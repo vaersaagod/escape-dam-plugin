@@ -29,7 +29,6 @@ class EscapeDamCpAsset extends AssetBundle
         ];
 
         $this->js = [
-            //'EscapeDamElementEditor.js',
             'EscapeDamAssetEditor.js',
         ];
 
