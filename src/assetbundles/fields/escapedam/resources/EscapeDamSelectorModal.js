@@ -49,6 +49,9 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
 
         // Listen to message from child window
         eventer(messageEvent, $.proxy(function (e) {
+            if (!this.visible) {
+                return;
+            }
             var data = e.data || {};
             var action = data.action || null;
             switch (action) {
