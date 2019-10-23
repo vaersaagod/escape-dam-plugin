@@ -20,15 +20,9 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
             return;
         }
 
-        var token = Craft.EscapeDam.settings.token;
-        if (!token) {
-            console.error('No DAM token');
-            return;
-        }
-
         // Build the modal
         this.$container = $('<div class="modal elementselectormodal dam-modal"></div>').appendTo(Garnish.$bod);
-        this.$body = $('<div class="body"><iframe src="' + damUrl + '?token=' + token + '&context=field&storageKey=' + this.settings.storageKey +'" style="width:100%;height:100%;overflow:hidden;" scrolling="no" frameborder="0" /></div>').appendTo(this.$container);
+        this.$body = $('<div class="body"><iframe src="" style="width:100%;height:100%;overflow:hidden;" scrolling="no" frameborder="0" /></div>').appendTo(this.$container);
 
         this.base(this.$container, this.settings);
 
@@ -64,6 +58,12 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
             }
         }, this), false);
 
+        // Get a fresh token, and then show the DAM in the iframe
+        $.ajax(Craft.getActionUrl('escapedam/token/get-token'), {
+            success: $.proxy(function (token) {
+                this.$iframe.attr('src', damUrl + '?token=' + token + '&context=field&storageKey=' + this.settings.storageKey);
+            }, this)
+        });
     },
 
     selectFiles: function (fileIds) {
