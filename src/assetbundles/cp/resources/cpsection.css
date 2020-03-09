@@ -2,8 +2,15 @@
     display: none !important;
 }
 
+#main-content {
+    position: relative;
+}
+
 #content-container #content {
     padding: 0 !important;
+    width: 100% !important;
     height: 100% !important;
     overflow: hidden !important;
+    position: absolute;
+    top: 0; left: 0;
 }
