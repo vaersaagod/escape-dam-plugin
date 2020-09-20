@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Component;
 use craft\db\Query;
 use craft\elements\Asset;
+use craft\helpers\Json;
 
 class Files extends Component
 {
@@ -30,6 +31,25 @@ class Files extends Component
             ->scalar();
 
         return $assetId ? Craft::$app->getAssets()->getAssetById($assetId) : null;
+    }
+
+    /**
+     * Return the original DAM ID for an imported Asset
+     *
+     * @param Asset $asset
+     * @return mixed|null
+     */
+    public function getFileForImportedAsset(Asset $asset)
+    {
+        $damFileSettings = (new Query())
+            ->select(['importedfiles.settings'])
+            ->from('{{%escapedam_importedfiles}} AS importedfiles')
+            ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->id])
+            ->scalar();
+        if (!$damFileSettings || !Json::isJsonObject($damFileSettings)) {
+            return null;
+        }
+        return Json::decode($damFileSettings);
     }
 
     /**
