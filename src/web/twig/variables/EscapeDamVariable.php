@@ -3,6 +3,7 @@
 
 namespace escape\escapedam\web\twig\variables;
 
+use craft\elements\Asset;
 
 use escape\escapedam\EscapeDam;
 use escape\escapedam\models\Settings;
@@ -30,5 +31,14 @@ class EscapeDamVariable
         /** @var Settings $settings */
         $settings = EscapeDam::$plugin->getSettings();
         return $settings->damUrl;
+    }
+
+    /**
+     * @param Asset $asset
+     * @return mixed|null
+     */
+    public function getFileForImportedAsset(Asset $asset)
+    {
+        return EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
     }
 }

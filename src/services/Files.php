@@ -7,9 +7,19 @@ use craft\base\Component;
 use craft\db\Query;
 use craft\elements\Asset;
 use craft\helpers\Json;
+use escape\escapedam\EscapeDam;
 
 class Files extends Component
 {
+
+    public function importFile(int $fileId, int $fieldId, int $elementId = null, int $siteId = null, int $folderId = null): bool
+    {
+        // Has the file already been imported?
+        $asset = EscapeDam::getInstance()->files->getImportedAsset($fileId, $fieldId, $elementId);
+        if ($asset) {
+
+        }
+    }
 
     /**
      * @param int $damId
@@ -34,7 +44,7 @@ class Files extends Component
     }
 
     /**
-     * Return the original DAM ID for an imported Asset
+     * Return the original DAM file data for an imported Asset
      *
      * @param Asset $asset
      * @return mixed|null

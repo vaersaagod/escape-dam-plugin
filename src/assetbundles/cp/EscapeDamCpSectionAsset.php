@@ -29,9 +29,9 @@ class EscapeDamCpSectionAsset extends AssetBundle
             CpAsset::class,
         ];
 
-        /*$this->js = [
-
-        ];*/
+        $this->js = [
+            'cpsection.js',
+        ];
 
         $this->css = [
             'cpsection.css',

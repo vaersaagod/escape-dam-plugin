@@ -10,8 +10,27 @@
 
 namespace escape\escapedam;
 
+use Craft;
+use craft\base\Element;
+use craft\base\Plugin;
+use craft\elements\Asset;
+use craft\elements\db\ElementQuery;
 use craft\events\ElementEvent;
+use craft\events\PopulateElementEvent;
+use craft\events\PluginEvent;
+use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterElementTableAttributesEvent;
+use craft\events\SetElementTableAttributeHtmlEvent;
+use craft\events\TemplateEvent;
+use craft\helpers\ElementHelper;
+use craft\helpers\UrlHelper;
 use craft\services\Elements;
+use craft\services\Fields;
+use craft\services\Plugins;
+use craft\web\Application;
+use craft\web\twig\variables\CraftVariable;
+use craft\web\View;
+
 use escape\escapedam\assetbundles\cp\EscapeDamCpAsset;
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\models\Settings;
@@ -19,21 +38,6 @@ use escape\escapedam\services\Api;
 use escape\escapedam\services\Files;
 use escape\escapedam\services\Users;
 use escape\escapedam\web\twig\variables\EscapeDamVariable;
-
-use Craft;
-use craft\base\Element;
-use craft\base\Plugin;
-use craft\elements\Asset;
-use craft\elements\db\ElementQuery;
-use craft\events\PopulateElementEvent;
-use craft\events\PluginEvent;
-use craft\events\RegisterComponentTypesEvent;
-use craft\events\TemplateEvent;
-use craft\services\Fields;
-use craft\services\Plugins;
-use craft\web\Application;
-use craft\web\twig\variables\CraftVariable;
-use craft\web\View;
 
 use yii\base\Event;
 use yii\base\InvalidConfigException;
@@ -116,15 +120,6 @@ class EscapeDam extends Plugin
 
         Event::on(
             Plugins::class,
-            Plugins::EVENT_AFTER_INSTALL_PLUGIN,
-            function (PluginEvent $event) {
-                if ($event->plugin === $this) {
-                }
-            }
-        );
-
-        Event::on(
-            Plugins::class,
             Plugins::EVENT_AFTER_LOAD_PLUGINS,
             function () {
                 
@@ -149,49 +144,74 @@ class EscapeDam extends Plugin
                         }
                     }
                 );
-
-                Event::on(
-                    Elements::class,
-                    Elements::EVENT_AFTER_SAVE_ELEMENT,
-                    function (ElementEvent $event) {
-                        /** @var Element $element */
-                        $element = $event->element;
-                        // Get any DAM fields associated with this element, and make sure imported Asset records for this element is updated with the element's ID
-                        if (!$fieldLayout = $element->getFieldLayout()) {
-                            return;
-                        }
-                        $fields = $fieldLayout->getFields();
-                        foreach ($fields as $field) {
-                            if (!$field instanceof EscapeDamField) {
-                                continue;
-                            }
-                            $fieldHandle = $field->handle;
-                            $assetIds = $element->$fieldHandle->ids();
-                            if (empty($assetIds)) {
-                                continue;
-                            }
-                            try {
-                                EscapeDam::$plugin->files->relateImportedAssetToElement($assetIds, (int)$field->id, (int)$element->id);
-                            } catch (\Throwable $e) {
-                                Craft::$app->getErrorHandler()->logException($e);
-                            }
-                        }
-                    }
-                );
-
-                /**
-                 * Attach a behavior after an Asset has been loaded from the database (populated).
-                 */
-                /*Event::on(ElementQuery::class, ElementQuery::EVENT_AFTER_POPULATE_ELEMENT, function(PopulateElementEvent $event) {
-                    /** @var Element $element */
-                    /*$element = $event->element;
-                    if (!$element instanceof Asset) {
-                        return;
-                    }
-                    $element->attachBehavior('escapeDamAssetBehavior', AssetBehaviour::class);
-                });*/
             }
         );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_AFTER_SAVE_ELEMENT,
+            function (ElementEvent $event) {
+                /** @var Element $element */
+                $element = $event->element;
+                // Get any DAM fields associated with this element, and make sure imported Asset records for this element is updated with the element's ID
+                if (ElementHelper::isDraftOrRevision($element) || !$fieldLayout = $element->getFieldLayout()) {
+                    return;
+                }
+                $fields = $fieldLayout->getFields();
+                foreach ($fields as $field) {
+                    if (!$field instanceof EscapeDamField) {
+                        continue;
+                    }
+                    $fieldHandle = $field->handle;
+                    $assetIds = $element->$fieldHandle->ids();
+                    if (empty($assetIds)) {
+                        continue;
+                    }
+                    try {
+                        EscapeDam::$plugin->files->relateImportedAssetToElement($assetIds, (int)$field->id, (int)$element->id);
+                    } catch (\Throwable $e) {
+                        Craft::$app->getErrorHandler()->logException($e);
+                    }
+                }
+            }
+        );
+
+        /**
+         * Attach a behavior after an Asset has been loaded from the database (populated).
+         */
+        /*Event::on(ElementQuery::class, ElementQuery::EVENT_AFTER_POPULATE_ELEMENT, function(PopulateElementEvent $event) {
+            /** @var Element $element */
+        /*$element = $event->element;
+        if (!$element instanceof Asset) {
+            return;
+        }
+        $element->attachBehavior('escapeDamAssetBehavior', AssetBehaviour::class);
+    });*/
+
+        Craft::$app->getView()->hook('cp.assets.edit.meta', function (array $context) {
+            return Craft::$app->getView()->renderTemplate('escapedam/_components/hooks/element-edit-meta', $context);
+        });
+
+        Event::on(Asset::class, Element::EVENT_REGISTER_TABLE_ATTRIBUTES, function (RegisterElementTableAttributesEvent $event) {
+            $event->tableAttributes['_escapedam_url'] = Craft::t('site', 'DAM Link');
+        });
+
+        Event::on(Asset::class, Element::EVENT_SET_TABLE_ATTRIBUTE_HTML, function (SetElementTableAttributeHtmlEvent $event) {
+            $attribute = $event->attribute;
+            if ($attribute === '_escapedam_url') {
+                /** @var Asset $asset */
+                $asset = $event->sender;
+                $damFile = EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
+                if ($damFile) {
+                    $damUrl = EscapeDam::getInstance()->getSettings()->damUrl;
+                    $fileUrl = UrlHelper::url(\rtrim($damUrl, '/')) . "/edit/{$damFile['id']}";
+                    $event->html = "<a href=\"{$fileUrl}\" target=\"_blank\" rel=\"noopener noreferrer\" data-icon=\"external\"></a>";
+                } else {
+                    $event->html = '';
+                }
+                $event->handled = true;
+            }
+        });
 
         Craft::info(
             Craft::t(
