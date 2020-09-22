@@ -79,7 +79,7 @@ class EscapeDam extends Plugin
     /**
      * @var bool
      */
-    public $hasCpSettings = true;
+    public $hasCpSettings = false;
 
     // Public Methods
     // =========================================================================
