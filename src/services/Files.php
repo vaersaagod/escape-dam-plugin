@@ -65,8 +65,21 @@ class Files extends Component
      * @throws \yii\base\Exception
      * @throws \yii\db\Exception
      */
-    public function importFile(int $fileId, int $fieldId, int $elementId = null, int $siteId = null, int $folderId = null): Asset
+    public function importFile(int $fileId, int $fieldId, int $elementId = null, int $siteId = null, int $folderId = null, int $uploaderId = null): Asset
     {
+
+        // Get uploader (either via the $uploaderId param, or the currently logged in user
+        if ($uploaderId) {
+            $uploader = Craft::$app->getUsers()->getUserById($uploaderId);
+            if (!$uploader) {
+                throw new \Exception('Invalid uploader ID');
+            }
+        } else {
+            $uploader = Craft::$app->getUser()->getIdentity();
+            if (!$uploader) {
+                throw new \Exception('User is not logged in');
+            }
+        }
 
         // Has the file already been imported?
         $asset = $this->getImportedAsset($fileId, $fieldId, $elementId);
@@ -89,10 +102,8 @@ class Files extends Component
             throw new \Exception('The target folder provided for importing is not valid');
         }
 
-        /** @var VolumeInterface $volume */
-        $volume = $folder->getVolume();
-
         // Get file data from the Escape DAM API
+        EscapeDam::getInstance()->api->setUser($uploader);
         $fileData = EscapeDam::getInstance()->api->getFileDetailsById($fileId);
         if (!$fileData) {
             throw new \Exception("Could not retrieve details and metadata for remote file {$fileId}");
@@ -116,6 +127,7 @@ class Files extends Component
         $asset->newFolderId = $folder->id;
         $asset->volumeId = $folder->volumeId;
         $asset->avoidFilenameConflicts = true;
+        $asset->uploaderId = $uploader->id;
         $asset->setScenario(Asset::SCENARIO_CREATE);
 
         $this->_populateImportedAssetFieldValues($asset, $defaultSiteLocalizedData['fieldValues'] ?? []);

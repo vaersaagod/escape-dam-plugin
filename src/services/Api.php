@@ -6,26 +6,28 @@ namespace escape\escapedam\services;
 
 use Craft;
 use craft\base\Component;
+use craft\elements\User;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
 use escape\escapedam\EscapeDam;
 use escape\escapedam\models\Settings;
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+
 use Psr\Http\Message\ResponseInterface;
 
 class Api extends Component
 {
 
-    /**
-     * @var array
-     */
+    /** @var Client|null */
+    public $client;
+
+    /** @var int[]|null */
     protected $siteIds;
 
-    /**
-     * @var Client
-     */
-    public $client;
+    /** @var int|null */
+    private $_userId = null;
 
     // Public Methods
     // =========================================================================
@@ -38,13 +40,33 @@ class Api extends Component
         parent::init();
 
         /** @var Settings $settings */
-        $settings = EscapeDam::$plugin->getSettings();
+        $settings = EscapeDam::getInstance()->getSettings();
 
         if (!isset($this->client)) {
             $this->client = Craft::createGuzzleClient([
                 'base_uri' => \rtrim($settings->damUrl, '/') . '/',
             ]);
         }
+    }
+
+    /**
+     * Sets a User to the API service
+     * This user will act as the current user for subsequent API requests
+     * We have to do this to generate bearer tokens in console requests, which can't read the session cookie
+     *
+     * @param User $user
+     */
+    public function setUser(User $user)
+    {
+        $this->setUserId($user->id);
+    }
+
+    /**
+     * @param int $userId
+     */
+    public function setUserId(int $userId)
+    {
+        $this->_userId = $userId;
     }
 
     /**
@@ -120,7 +142,7 @@ class Api extends Component
 
         $options = ArrayHelper::merge($options, [
             'headers' => [
-                'Authorization' => 'Bearer ' . EscapeDam::$plugin->users->getDamToken(),
+                'Authorization' => 'Bearer ' . EscapeDam::getInstance()->users->getDamToken($this->_userId),
                 'Accept' => 'application/json',
                 'X-Craft-System' => 'craft:' . Craft::$app->getVersion() . ';' . strtolower(Craft::$app->getEditionName()),
             ],

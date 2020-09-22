@@ -12,17 +12,28 @@ use escape\escapedam\models\Settings;
 
 use \Firebase\JWT\JWT;
 
+/**
+ * Class Users
+ * @package escape\escapedam\services
+ */
 class Users extends Component
 {
     /**
      * @return string
      * @throws \craft\errors\SiteNotFoundException
      */
-    public function getDamToken(): string
+    public function getDamToken(int $userId = null): string
     {
-        $user = Craft::$app->getUser()->getIdentity();
-        if (!$user) {
-            throw new \Exception('User is not logged in');
+        if ($userId) {
+            $user = Craft::$app->getUsers()->getUserById($userId);
+            if (!$user) {
+                throw new \Exception('Invalid user ID');
+            }
+        } else {
+            $user = Craft::$app->getUser()->getIdentity();
+            if (!$user) {
+                throw new \Exception('User is not logged in');
+            }
         }
         /** @var Settings $settings */
         $settings = EscapeDam::$plugin->getSettings();
