@@ -47,11 +47,19 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
                 return;
             }
             var data = e.data || {};
+            var source = e.source || null;
             var action = data.action || null;
             switch (action) {
                 case 'select-files':
                     var fileIds = data.fileIds || [];
                     this.selectFiles(fileIds);
+                    break;
+                case 'refresh-token':
+                    $.ajax(Craft.getActionUrl('escapedam/token/get-token'), {
+                        success: function (token) {
+                            source.window.postMessage({ token: token }, Craft.EscapeDam.settings.damUrl);
+                        }
+                    });
                     break;
                 default:
                     console.warn('Unknown action: ', action);
