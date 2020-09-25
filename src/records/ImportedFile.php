@@ -17,6 +17,7 @@ use craft\db\ActiveRecord;
  * @property $sourceElementId
  * @property $settings
  * @property $dateSynced
+ * @property $retroActive
  */
 class ImportedFile extends ActiveRecord
 {

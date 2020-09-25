@@ -23,6 +23,7 @@ use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\SetElementTableAttributeHtmlEvent;
 use craft\events\TemplateEvent;
 use craft\helpers\ElementHelper;
+use craft\helpers\Html;
 use craft\helpers\UrlHelper;
 use craft\services\Elements;
 use craft\services\Fields;
@@ -34,6 +35,7 @@ use craft\web\View;
 
 use escape\escapedam\assetbundles\cp\EscapeDamCpAsset;
 use escape\escapedam\fields\EscapeDamField;
+use escape\escapedam\fields\EscapeDamLinkField;
 use escape\escapedam\models\Settings;
 use escape\escapedam\services\Api;
 use escape\escapedam\services\Files;
@@ -71,7 +73,7 @@ class EscapeDam extends Plugin
     /**
      * @var string
      */
-    public $schemaVersion = '1.1.0';
+    public $schemaVersion = '1.2.0';
 
     /**
      * @var bool
@@ -101,12 +103,13 @@ class EscapeDam extends Plugin
             'users' => Users::class,
         ]);
 
-        // Register fieldtype
+        // Register fieldtypes
         Event::on(
             Fields::class,
             Fields::EVENT_REGISTER_FIELD_TYPES,
             function (RegisterComponentTypesEvent $event) {
                 $event->types[] = EscapeDamField::class;
+                $event->types[] = EscapeDamLinkField::class;
             }
         );
 
@@ -173,6 +176,9 @@ class EscapeDam extends Plugin
                         EscapeDam::$plugin->files->relateImportedAssetToElement($assetIds, (int)$field->id, (int)$element->id);
                     } catch (\Throwable $e) {
                         Craft::$app->getErrorHandler()->logException($e);
+                        if (Craft::$app->getConfig()->getGeneral()->devMode) {
+                            throw $e;
+                        }
                     }
                 }
             }
@@ -206,8 +212,17 @@ class EscapeDam extends Plugin
                 $damFile = EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
                 if ($damFile) {
                     $damUrl = EscapeDam::getInstance()->getSettings()->damUrl;
-                    $fileUrl = UrlHelper::url(\rtrim($damUrl, '/')) . "/edit/{$damFile['id']}";
-                    $event->html = "<a href=\"{$fileUrl}\" target=\"_blank\" rel=\"noopener noreferrer\" data-icon=\"external\"></a>";
+                    if ($damUrl) {
+                        $fileUrl = UrlHelper::url(\rtrim($damUrl, '/')) . "/edit/{$damFile['id']}";
+                        $event->html = Html::a('Open in DAM', $fileUrl, [
+                            'target' => '_blank',
+                            'rel' => 'noopener noreferrer',
+                            'class' => 'btn',
+                            'data-icon' => 'external',
+                        ]);
+                    } else {
+                        $event->html = '';
+                    }
                 } else {
                     $event->html = '';
                 }

@@ -40,7 +40,7 @@ class EscapeDam extends Utility
      */
     public static function contentHtml(): string
     {
-        return '';
+        return Craft::$app->getView()->renderTemplate('escapedam/_components/utility/fix-missing-importedfiles-records');
     }
 
 }

@@ -67,6 +67,7 @@ class Install extends Migration
                     'fieldId' => $this->integer()->notNull(),
                     'assetId' => $this->integer()->notNull(),
                     'sourceElementId' => $this->integer()->null(),
+                    'createdByUtility' => $this->boolean()->null(),
                     'settings' => $this->text(),
                     'dateSynced' => $this->dateTime()->notNull(),
                     'dateCreated' => $this->dateTime()->notNull(),

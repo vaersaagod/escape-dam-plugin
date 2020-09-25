@@ -1,0 +1,46 @@
+{% import "_includes/forms" as forms %}
+
+<h2>Fix missing imported file records</h2>
+
+<form method="post" accept-charset="UTF-8">
+
+    {{ actionInput('escapedam/utility/fix-missing-imported-file-records') }}
+    {{ hiddenInput('siteId', currentSite.id) }}
+    {{ csrfInput() }}
+
+    {% set volumes = craft.app.getVolumes().getAllVolumes()|multisort('name') %}
+    {{ forms.selectField({
+        label: 'Volume',
+        name: 'volumeId',
+        options: volumes|map(volume => {
+            value: volume.id,
+            label: volume.name
+        })
+    }) }}
+
+    <div class="field">
+        <button type="submit" class="btn submit">Submit</button>
+
+        <p class="instructions">
+            <small>Attempts to re-create missing relations between local Assets and files in the DAM</small>
+        </p>
+
+    </div>
+
+</form>
+
+<hr/>
+
+<form method="post" accept-charset="UTF-8">
+
+    {{ actionInput('escapedam/utility/delete-all-records-created-by-utility') }}
+    {{ csrfInput() }}
+
+    <div class="field">
+        <button class="btn" type="submit" onclick="return window.confirm('Are you absolutely sure you want to delete all records created by this utility?');">Revert</button>
+        <p class="instructions">
+            <small>Removes all records previously created by this utility</small>
+        </p>
+    </div>
+
+</form>

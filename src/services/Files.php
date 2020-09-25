@@ -15,6 +15,7 @@ use craft\models\VolumeFolder;
 
 use escape\escapedam\EscapeDam;
 use escape\escapedam\fields\EscapeDamField;
+use escape\escapedam\helpers\ApiHelper;
 use escape\escapedam\helpers\FileHelper;
 use escape\escapedam\models\Settings;
 use escape\escapedam\records\ImportedFile as ImportedFileRecord;
@@ -23,11 +24,6 @@ use yii\web\BadRequestHttpException;
 
 class Files extends Component
 {
-
-    /** @var \string[][] */
-    const LANGUAGE_CODE_MAP = [
-        'nb' => ['nb-NO', 'nn', 'nn-NO', 'no'],
-    ];
 
     /**
      * @param int $fieldId
@@ -82,7 +78,7 @@ class Files extends Component
         }
 
         // Has the file already been imported?
-        $asset = $this->getImportedAsset($fileId, $fieldId, $elementId);
+        $asset = $this->getImportedAsset($fileId, $fieldId, $elementId, false);
 
         if ($asset) {
             return $asset;
@@ -240,16 +236,38 @@ class Files extends Component
      * @param int|int[] $assetId
      * @param int $fieldId
      * @param int $elementId
+     * @throws \yii\db\Exception
      */
-    public function relateImportedAssetToElement($assetId, int $fieldId, int $elementId)
+    public function relateImportedAssetToElement($assetIds, int $fieldId, int $elementId)
     {
-        Craft::$app->getDb()->createCommand()->update('{{%escapedam_importedfiles}}', [
-            'sourceElementId' => $elementId,
-        ], [
-            'assetId' => $assetId,
-            'fieldId' => $fieldId,
-            'sourceElementId' => null,
-        ])->execute();
+
+        if (!\is_array($assetIds)) {
+            $assetIds = [$assetIds];
+        }
+
+        foreach ($assetIds as $assetId) {
+
+            $id = (int)(new Query())
+                ->select(['id'])
+                ->from('{{%escapedam_importedfiles}}')
+                ->where(['is not', 'damId', null])
+                ->andWhere('assetId=:assetId', [':assetId' => $assetId])
+                ->andWhere(['or', 'fieldId=:fieldId', 'fieldId IS NULL'], [':fieldId' => $fieldId])
+                ->andWhere(['or', 'sourceElementId=:sourceElementId', 'sourceElementId IS NULL'], [':sourceElementId' => $elementId])
+                ->scalar();
+
+            if (!$id) {
+                continue;
+            }
+
+            $result = Craft::$app->getDb()->createCommand()->update('{{%escapedam_importedfiles}}', [
+                'sourceElementId' => $elementId,
+                'fieldId' => $fieldId,
+            ], [
+                'id' => $id,
+            ])->execute();
+
+        }
     }
 
     /**
@@ -265,7 +283,7 @@ class Files extends Component
         if (\in_array($language, \array_keys($localizedData))) {
             return $localizedData[$language];
         }
-        foreach (self::LANGUAGE_CODE_MAP as $languageCode => $languages) {
+        foreach (ApiHelper::LANGUAGE_CODE_MAP as $languageCode => $languages) {
             if (\in_array($language, $languages)) {
                 return $localizedData[$languageCode] ?? null;
             }

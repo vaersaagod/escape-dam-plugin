@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.3.0 - 2020-09-25
+
+### Added
+- Added utility for repairing missing imported record relations  
+- Added "DAM Link" field  
+
+### Changed
+- Refactored `Files::relateImportedAssetToElement()`  
+- Adds `createdByUtility` column to the `{{%escapedam_importedfiles}}` table  
+
 ## 1.2.2 - 2020-09-25
 
 ### Added  

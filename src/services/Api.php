@@ -6,10 +6,12 @@ namespace escape\escapedam\services;
 
 use Craft;
 use craft\base\Component;
+use craft\elements\Asset;
 use craft\elements\User;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
 use escape\escapedam\EscapeDam;
+use escape\escapedam\helpers\ApiHelper;
 use escape\escapedam\models\Settings;
 
 use GuzzleHttp\Client;
@@ -23,8 +25,8 @@ class Api extends Component
     /** @var Client|null */
     public $client;
 
-    /** @var int[]|null */
-    protected $siteIds;
+    /** @var array|null */
+    protected $sites;
 
     /** @var int|null */
     private $_userId = null;
@@ -72,16 +74,25 @@ class Api extends Component
     /**
      * @return array
      */
-    public function getSiteIds(): array
+    public function getSites(): array
     {
-        if (!isset($this->siteIds)) {
+        if (!isset($this->sites)) {
             $response = $this->request('GET', 'actions/escape-dam-module/default/get-sites');
             $body = Json::decode((string)$response->getBody());
-            $this->siteIds = \array_map(function (array $site) {
-                return (int)$site['id'];
-            }, $body['data'] ?? []);
+            $this->sites = $body['data'] ?? [];
         }
-        return $this->siteIds;
+        return $this->sites;
+    }
+
+    /**
+     * @return array
+     */
+    public function getSiteIds(): array
+    {
+        $sites = $this->getSites() ?? [];
+        return \array_map(function (array $site) {
+            return (int)$site['id'];
+        }, $sites);
     }
 
     /**
@@ -128,6 +139,69 @@ class Api extends Component
             ]);
         }
         return $data;
+    }
+
+    /**
+     * Query for DAM files matching a given Asset by extension and filename
+     *
+     * @param Asset $asset
+     * @return array|mixed|null
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function queryForOriginalDamFileByAsset(Asset $asset)
+    {
+
+        // Figure out which DAM site to use
+        $damSiteId = null;
+        $site = $asset->getSite();
+        $damSites = $this->getSites();
+
+        foreach ($damSites as $damSite) {
+            $damSiteLanguage = $damSite['language'];
+            if ($damSiteLanguage === $site->language || \in_array($site->language, ApiHelper::LANGUAGE_CODE_MAP[$damSiteLanguage] ?? [])) {
+                $damSiteId = (int)$damSite['id'];
+                break;
+            }
+        }
+
+        if (!$damSiteId) {
+            throw new \Exception('No DAM site ID (couldn\'t match language)');
+        }
+
+        $filename = $asset->getFilename(false);
+        $dateCreated = $asset->dateCreated->format('Y-m-d');
+
+        $criteria = [
+            'siteId' => $damSiteId,
+            'damFilename' => $filename,
+            'dateCreated' => "<= {$dateCreated}"
+        ];
+
+        $response = $this->request('GET', 'api/assets/query', [
+            'query' => [
+                'siteId' => $damSiteId,
+                'criteria' => $criteria,
+            ],
+        ]);
+
+        $responseJson = (string)$response->getBody();
+
+        if (!$responseJson || !Json::isJsonObject($responseJson)) {
+            return null;
+        }
+
+        $body = Json::decode((string)$response->getBody());
+        if (empty($body) || !\is_array($body)) {
+            return null;
+        }
+
+        $damFiles = $body['data'] ?? [];
+        if (empty($damFiles) || !\is_array($damFiles)) {
+            return null;
+        }
+
+        return $damFiles;
+
     }
 
     /**
