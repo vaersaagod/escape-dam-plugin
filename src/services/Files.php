@@ -110,8 +110,13 @@ class Files extends Component
         }
 
         // Download the original file
+        $fileUrl = $fileData['assetUrl'] ?? $fileData['imageUrl'] ?? $fileData['url'];
         $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
-        FileHelper::downloadFile($fileData['imageUrl'] ?? $fileData['url'], $tempPath);
+        FileHelper::downloadFile($fileUrl, $tempPath);
+
+        if (!\file_exists($tempPath) || !\is_file($tempPath)) {
+            throw new \Exception("Could not download file \"{$fileUrl}\"");
+        }
 
         // Get the default site – we'll create the asset here first
         $sitesService = Craft::$app->getSites();

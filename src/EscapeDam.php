@@ -27,6 +27,7 @@ use craft\helpers\UrlHelper;
 use craft\services\Elements;
 use craft\services\Fields;
 use craft\services\Plugins;
+use craft\services\Utilities;
 use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
@@ -37,6 +38,7 @@ use escape\escapedam\models\Settings;
 use escape\escapedam\services\Api;
 use escape\escapedam\services\Files;
 use escape\escapedam\services\Users;
+use escape\escapedam\utilities\EscapeDam as EscapeDamUtility;
 use escape\escapedam\web\twig\variables\EscapeDamVariable;
 
 use yii\base\Event;
@@ -213,6 +215,14 @@ class EscapeDam extends Plugin
             }
         });
 
+        Event::on(
+            Utilities::class,
+            Utilities::EVENT_REGISTER_UTILITY_TYPES,
+            function (RegisterComponentTypesEvent $event) {
+                $event->types[] = EscapeDamUtility::class;
+            }
+        );
+
         Craft::info(
             Craft::t(
                 'escapedam',
@@ -222,15 +232,6 @@ class EscapeDam extends Plugin
             __METHOD__
         );
     }
-
-    /**
-     * @return array|null
-     */
-    /*public function getCpNavItem()
-    {
-        $item = parent::getCpNavItem();
-        return $item;
-    }*/
 
     // Protected Methods
     // =========================================================================
