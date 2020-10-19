@@ -16,13 +16,25 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
     damModal: null,
     disabledFileIds: null,
 
-    // init: function () {
-    //     console.log('init DAM select input!!!');
-    //     this.super.init.apply(this, arguments);
-    // },
+    getAddElementsBtn: function() {
+        return this.$container.find('.btn[data-input]');
+    },
+
+    disableAddElementsBtn: function() {
+        var $btn = this.$container.find('.btn[data-input]');
+        if ($btn) {
+            $btn.addClass('hidden');
+        }
+    },
+
+    enableAddElementsBtn: function() {
+        var $btn = this.$container.find('.btn[data-input]');
+        if ($btn) {
+            $btn.removeClass('hidden');
+        }
+    },
 
     showModal: function (e) {
-        console.log('show modal', this.damModal);
         if (!this.canAddMoreElements()) {
             return;
         }
@@ -46,13 +58,13 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
 
     onDamModalSelect: function (fileIds) {
 
-        /*if (this.settings.limit) {
+        if (this.settings.limit) {
             // Cut off any excess elements
             var slotsLeft = this.settings.limit - this.$elements.length;
             if (fileIds.length > slotsLeft) {
                 fileIds = fileIds.slice(0, slotsLeft);
             }
-        }*/
+        }
 
         this._importFiles(fileIds);
 
@@ -69,6 +81,10 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
 
         if (!fileIds || !fileIds.length) {
             return;
+        }
+
+        if (!this.progressBar) {
+            this.progressBar = new Craft.ProgressBar($('<div class="progress-shade"></div>').appendTo(this.$container));
         }
 
         this.progressBar.$progressBar.css({
@@ -148,37 +164,7 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
         Craft.cp.runQueue();
     },
 
-    // onModalSelect: function(elements) {
-    //     console.log({ elements });
-    //     this.super.onModalSelect.apply(this, arguments);
-    //     // if (this.settings.limit) {
-    //     //     // Cut off any excess elements
-    //     //     var slotsLeft = this.settings.limit - this.$elements.length;
-    //     //
-    //     //     if (elements.length > slotsLeft) {
-    //     //         elements = elements.slice(0, slotsLeft);
-    //     //     }
-    //     // }
-    //     //
-    //     // this.selectElements(elements);
-    //     // this.updateDisabledElementsInModal();
-    // },
-
     createDamModal: function (settings) {
         return new Craft.EscapeDam.EscapeDamSelectorModal(settings);
-    },
-
-    _attachUploader: function () {
-        if (!this.settings.assetsEnabled) {
-            // Disable the drag'n'drop uploader if native Assets isn't enabled for this field
-            this.$container.on('dragover drop', function (e) {
-                e.preventDefault();
-                return false;
-            });
-            // ...but we do need the progress bar still
-            this.progressBar = new Craft.ProgressBar($('<div class="progress-shade"></div>').appendTo(this.$container));
-            return;
-        }
-        this.super._attachUploader.apply(this, arguments);
-    },
+    }
 });

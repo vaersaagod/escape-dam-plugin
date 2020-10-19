@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.4.0 - 2020-10-19
+
+### Fixed  
+- Fixed compatibility with the changes to native Assets fields in Craft 3.5.13  
+
+### Changed  
+- Escape DAM now requires Craft 3.5.13 or later  
+
 ## 1.3.0 - 2020-09-25
 
 ### Added

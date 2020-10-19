@@ -35,10 +35,10 @@
         {% endfor %}
     </div>
     {# Select from DAM #}
-    <div class="btn add icon dashed escapedam" data-input="dam">{{ damSelectionLabel }}</div>
+    <button type="button" class="btn add icon dashed escapedam" data-input="dam"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ damSelectionLabel }}</button>
     {# Select from Assets #}
     {% if enableAssetsInput %}
-        <div class="btn add icon dashed escapedam" data-input="assets">{{ selectionLabel }}</div>
+        <button type="button" class="btn add icon dashed escapedam" data-input="assets"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ selectionLabel }}</button>
     {% endif %}
 </div>
 
@@ -57,7 +57,8 @@
     fieldId: fieldId,
     defaultFieldLayoutId: defaultFieldLayoutId,
     modalSettings: {hideSidebar: hideSidebar},
-    assetsEnabled: enableAssetsInput ? true : false
+    assetsEnabled: enableAssetsInput ? true : false,
+    canUpload: false
 } %}
 
 {% js %}

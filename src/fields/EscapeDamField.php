@@ -19,6 +19,9 @@ use yii\base\InvalidConfigException;
 class EscapeDamField extends Assets
 {
 
+    /** @inheritdoc */
+    public $allowUploads = false;
+
     /**
      * @var string|null Where files should be restricted to, in format
      * "folder:X", where X is the craft\models\VolumeFolder ID
