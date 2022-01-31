@@ -8,6 +8,7 @@ use craft\base\LocalVolumeInterface;
 use craft\db\Query;
 use craft\elements\Asset;
 use craft\helpers\Assets as AssetsHelper;
+use craft\helpers\ConfigHelper;
 use craft\helpers\Db;
 use craft\helpers\Json;
 use craft\models\Site;
@@ -244,6 +245,7 @@ class Files extends Component
     /**
      * @param Asset $asset
      * @return bool
+     * @throws \yii\base\InvalidConfigException
      */
     public function isImportedAsset(Asset $asset): bool
     {
@@ -256,7 +258,7 @@ class Files extends Component
             ->from('{{%escapedam_importedfiles}} AS importedfiles')
             ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->id])
             ->exists();
-        Craft::$app->getCache()->set($cacheKey, $result ? 'true' : 'false', 'P30D');
+        Craft::$app->getCache()->set($cacheKey, $result ? 'true' : 'false', ConfigHelper::durationInSeconds('P30D'));
         return $result;
     }
 
@@ -302,6 +304,7 @@ class Files extends Component
     /**
      * @param Asset $asset
      * @return string
+     * @throws \yii\base\InvalidConfigException
      */
     public function getContents(Asset $asset): string
     {
@@ -317,7 +320,7 @@ class Files extends Component
             $contents = '';
         }
         if ($contents) {
-            Craft::$app->getCache()->set($cacheKey, $contents, 'P30D');
+            Craft::$app->getCache()->set($cacheKey, $contents, ConfigHelper::durationInSeconds('P30D'));
         }
         return $contents;
     }
