@@ -14,28 +14,32 @@ use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\elements\db\ElementQuery;
+use craft\events\AssetPreviewEvent;
+use craft\events\DefineBehaviorsEvent;
 use craft\events\ElementEvent;
-use craft\events\PopulateElementEvent;
-use craft\events\PluginEvent;
+use craft\events\GetAssetThumbUrlEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\SetElementTableAttributeHtmlEvent;
 use craft\events\TemplateEvent;
 use craft\helpers\ElementHelper;
 use craft\helpers\Html;
+use craft\helpers\Json;
 use craft\helpers\UrlHelper;
+use craft\services\Assets;
 use craft\services\Elements;
 use craft\services\Fields;
 use craft\services\Plugins;
 use craft\services\Utilities;
-use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 
 use escape\escapedam\assetbundles\cp\EscapeDamCpAsset;
+use escape\escapedam\assetpreviews\EscapeDamVideo;
+use escape\escapedam\behaviors\EscapeDamFileBehavior;
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\fields\EscapeDamLinkField;
+use escape\escapedam\helpers\MuxHelper;
 use escape\escapedam\models\Settings;
 use escape\escapedam\services\Api;
 use escape\escapedam\services\Files;
@@ -127,7 +131,7 @@ class EscapeDam extends Plugin
             Plugins::class,
             Plugins::EVENT_AFTER_LOAD_PLUGINS,
             function () {
-                
+
                 // Register Asset bundles
                 $request = Craft::$app->getRequest();
                 $user = Craft::$app->getUser()->getIdentity();
@@ -143,7 +147,7 @@ class EscapeDam extends Plugin
                             Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
                         } catch (InvalidConfigException $e) {
                             Craft::error(
-                                'Error registering AssetBundle - '.$e->getMessage(),
+                                'Error registering AssetBundle - ' . $e->getMessage(),
                                 __METHOD__
                             );
                         }
@@ -184,18 +188,6 @@ class EscapeDam extends Plugin
             }
         );
 
-        /**
-         * Attach a behavior after an Asset has been loaded from the database (populated).
-         */
-        /*Event::on(ElementQuery::class, ElementQuery::EVENT_AFTER_POPULATE_ELEMENT, function(PopulateElementEvent $event) {
-            /** @var Element $element */
-        /*$element = $event->element;
-        if (!$element instanceof Asset) {
-            return;
-        }
-        $element->attachBehavior('escapeDamAssetBehavior', AssetBehaviour::class);
-    });*/
-
         Craft::$app->getView()->hook('cp.assets.edit.meta', function (array $context) {
             return Craft::$app->getView()->renderTemplate('escapedam/_components/hooks/element-edit-meta', $context);
         });
@@ -229,6 +221,47 @@ class EscapeDam extends Plugin
                 $event->handled = true;
             }
         });
+
+        // Replace asset thumbs for DAM-imported videos (which are stored as json, Embedded Assets-style)
+        Event::on(
+            Assets::class,
+            Assets::EVENT_GET_ASSET_THUMB_URL,
+            function (GetAssetThumbUrlEvent $event) {
+                $asset = $event->asset;
+                if ($asset->kind !== Asset::KIND_JSON || !$this->files->isImportedAsset($asset)) {
+                    return;
+                }
+                $contents = $this->files->getContents($asset);
+                $data = Json::decodeIfJson($contents);
+                if (!$data || !\is_array($data) || !$muxPlaybackId = ($data['muxPlaybackId'] ?? null)) {
+                    return;
+                }
+                $thumbSize = max($event->width, $event->height);
+                $event->url = MuxHelper::getImageUrl($muxPlaybackId, ['width' => $thumbSize, 'height' => $thumbSize, 'fit_mode' => 'preserve']);
+            }
+        );
+
+        // Replace asset previews for DAM-imported videos, too
+        Event::on(
+            Assets::class,
+            Assets::EVENT_REGISTER_PREVIEW_HANDLER,
+            function (AssetPreviewEvent $event) {
+                $asset = $event->asset;
+                if ($asset->kind !== Asset::KIND_JSON || !$asset->getMuxPlaybackId()) {
+                    return;
+                }
+                $event->previewHandler = new EscapeDamVideo($asset);
+            }
+        );
+
+        // Add special sexy Asset behavior for DAM videos (Mux)
+        Event::on(
+            Asset::class,
+            Asset::EVENT_DEFINE_BEHAVIORS,
+            static function (DefineBehaviorsEvent $event) {
+                $event->behaviors['escapeDamFileBehavior'] = ['class' => EscapeDamFileBehavior::class];
+            }
+        );
 
         Event::on(
             Utilities::class,

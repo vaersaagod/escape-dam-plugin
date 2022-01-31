@@ -4,7 +4,7 @@ namespace escape\escapedam\services;
 
 use Craft;
 use craft\base\Component;
-use craft\base\VolumeInterface;
+use craft\base\LocalVolumeInterface;
 use craft\db\Query;
 use craft\elements\Asset;
 use craft\helpers\Assets as AssetsHelper;
@@ -20,8 +20,6 @@ use escape\escapedam\helpers\FileHelper;
 use escape\escapedam\models\Settings;
 use escape\escapedam\records\ImportedFile as ImportedFileRecord;
 
-use yii\web\BadRequestHttpException;
-
 class Files extends Component
 {
 
@@ -31,7 +29,7 @@ class Files extends Component
      * @return VolumeFolder|null
      * @throws \Exception
      */
-    public function getFolderForImportByFieldAndElement(int $fieldId, int $elementId = null)
+    public function getFolderForImportByFieldAndElement(int $fieldId, int $elementId = null): ?VolumeFolder
     {
         /** @var EscapeDamField $field */
         $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
@@ -54,6 +52,7 @@ class Files extends Component
      * @param int|null $elementId
      * @param int|null $siteId
      * @param int|null $folderId
+     * @param int|null $uploaderId
      * @return Asset
      * @throws \Throwable
      * @throws \craft\errors\ElementNotFoundException
@@ -78,7 +77,7 @@ class Files extends Component
         }
 
         // Has the file already been imported?
-        $asset = $this->getImportedAsset($fileId, $fieldId, $elementId, false);
+        $asset = $this->getImportedAsset($fileId, $fieldId, $elementId);
 
         if ($asset) {
             return $asset;
@@ -101,14 +100,21 @@ class Files extends Component
         // Get file data from the Escape DAM API
         EscapeDam::getInstance()->api->setUser($uploader);
         $fileData = EscapeDam::getInstance()->api->getFileDetailsById($fileId);
-        if (!$fileData) {
-            throw new \Exception("Could not retrieve details and metadata for remote file {$fileId}");
-        }
 
-        // Download the original file
-        $fileUrl = $fileData['assetUrl'] ?? $fileData['imageUrl'] ?? $fileData['url'];
-        $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
-        FileHelper::downloadFile($fileUrl, $tempPath);
+        // What kind of file is this?
+        $kind = $fileData['kind'] ?? null;
+        $fileUrl = $fileData['assetUrl'];
+        if ($kind === Asset::KIND_IMAGE) {
+            // Download the original image file
+            $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
+            FileHelper::downloadFile($fileUrl, $tempPath);
+        } else if ($kind === Asset::KIND_VIDEO) {
+            // Create a JSON file and save it to the temp path
+            $tempPath = AssetsHelper::tempFilePath('json');
+            \file_put_contents($tempPath, Json::encode($fileData));
+        } else {
+            throw new \Exception('Unsupported file kind');
+        }
 
         if (!\file_exists($tempPath) || !\is_file($tempPath)) {
             throw new \Exception("Could not download file \"{$fileUrl}\"");
@@ -120,7 +126,11 @@ class Files extends Component
         $defaultSite = $siteId ? $sitesService->getSiteById($siteId) : $sitesService->getCurrentSite();
         $defaultSiteLocalizedData = $this->_getLocalizedDataForSite($defaultSite, $fileData['localizedData']) ?? $fileData['localizedData']['en'];
 
-        $filename = AssetsHelper::prepareAssetName($defaultSiteLocalizedData['filename']);
+        $rawFilename = $defaultSiteLocalizedData['filename'];
+        if ($kind === Asset::KIND_VIDEO) {
+            $rawFilename .= '.json';
+        }
+        $filename = AssetsHelper::prepareAssetName($rawFilename);
 
         $asset = new Asset();
         $asset->tempFilePath = $tempPath;
@@ -164,7 +174,6 @@ class Files extends Component
         // Propagate Asset metadata to other sites
         $sites = Craft::$app->getSites()->getAllSites();
 
-        /** @var Site $site */
         foreach ($sites as $site) {
             if ((int)$site->id === (int)$defaultSite->id) {
                 continue;
@@ -191,7 +200,7 @@ class Files extends Component
      * @param int|null $elementId
      * @return Asset|null
      */
-    public function getImportedAsset(int $damId, int $fieldId, $elementId = null)
+    public function getImportedAsset(int $damId, int $fieldId, ?int $elementId = null): ?Asset
     {
         $assetId = (int)(new Query())
             ->select(['assets.id'])
@@ -233,9 +242,29 @@ class Files extends Component
     }
 
     /**
-     * @param int|int[] $assetId
+     * @param Asset $asset
+     * @return bool
+     */
+    public function isImportedAsset(Asset $asset): bool
+    {
+        $cacheKey = 'escapedam-is-imported-asset:' . $asset->uid . $asset->dateUpdated->getTimestamp();
+        $cachedResult = Craft::$app->getCache()->get($cacheKey);
+        if ($cachedResult === 'true') {
+            return true;
+        }
+        $result = (new Query())
+            ->from('{{%escapedam_importedfiles}} AS importedfiles')
+            ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->id])
+            ->exists();
+        Craft::$app->getCache()->set($cacheKey, $result ? 'true' : 'false', 'P30D');
+        return $result;
+    }
+
+    /**
+     * @param $assetIds
      * @param int $fieldId
      * @param int $elementId
+     * @return void
      * @throws \yii\db\Exception
      */
     public function relateImportedAssetToElement($assetIds, int $fieldId, int $elementId)
@@ -260,7 +289,7 @@ class Files extends Component
                 continue;
             }
 
-            $result = Craft::$app->getDb()->createCommand()->update('{{%escapedam_importedfiles}}', [
+            Craft::$app->getDb()->createCommand()->update('{{%escapedam_importedfiles}}', [
                 'sourceElementId' => $elementId,
                 'fieldId' => $fieldId,
             ], [
@@ -268,6 +297,29 @@ class Files extends Component
             ])->execute();
 
         }
+    }
+
+    /**
+     * @param Asset $asset
+     * @return string
+     */
+    public function getContents(Asset $asset): string
+    {
+        $cacheKey = 'escapedam-' . $asset->uid . '-contents';
+        $cachedContents = Craft::$app->getCache()->get($cacheKey);
+        if ($cachedContents) {
+            return $cachedContents;
+        }
+        try {
+            $contents = $asset->getContents();
+        } catch (\Throwable $e) {
+            Craft::error($e->getMessage(), __METHOD__);
+            $contents = '';
+        }
+        if ($contents) {
+            Craft::$app->getCache()->set($cacheKey, $contents, 'P30D');
+        }
+        return $contents;
     }
 
     /**

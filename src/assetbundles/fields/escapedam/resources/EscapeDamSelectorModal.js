@@ -13,6 +13,8 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
 
         this.setSettings(settings, Craft.EscapeDam.EscapeDamSelectorModal.defaults);
 
+        console.log('CREATE DAM MODAL', this.settings);
+
         // Get DAM url and token
         var damUrl = Craft.EscapeDam.settings.damUrl;
         if (!damUrl) {
@@ -69,7 +71,7 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
         // Get a fresh token, and then show the DAM in the iframe
         $.ajax(Craft.getActionUrl('escapedam/token/get-token'), {
             success: $.proxy(function (token) {
-                this.$iframe.attr('src', damUrl + '?token=' + token + '&context=field&storageKey=' + this.settings.storageKey);
+                this.$iframe.attr('src', damUrl + '?token=' + token + '&context=field&storageKey=' + this.settings.storageKey + (this.settings.allowedExtensions ? '&allowedExtensions=' + this.settings.allowedExtensions.join(',') : ''));
             }, this)
         });
     },

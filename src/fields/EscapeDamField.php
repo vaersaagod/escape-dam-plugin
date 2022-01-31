@@ -1,17 +1,15 @@
 <?php
 
-
 namespace escape\escapedam\fields;
-
 
 use Craft;
 use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\base\Volume;
-use craft\elements\db\ElementQuery;
+use craft\elements\Asset;
 use craft\errors\InvalidSubpathException;
 use craft\fields\Assets;
-use craft\helpers\Template;
+use craft\helpers\Assets as AssetsHelper;
 use craft\helpers\FileHelper;
 
 use yii\base\InvalidConfigException;
@@ -26,22 +24,22 @@ class EscapeDamField extends Assets
      * @var string|null Where files should be restricted to, in format
      * "folder:X", where X is the craft\models\VolumeFolder ID
      */
-    public $damImportLocationSource;
+    public ?string $damImportLocationSource;
 
     /**
      * @var string|null The subpath that files should be restricted to
      */
-    public $damImportLocationSubpath;
+    public ?string $damImportLocationSubpath;
 
     /**
      * @var string|null The label for the DAM selection input button
      */
-    public $damSelectionLabel;
+    public ?string $damSelectionLabel;
 
     /**
-     * @var bool|null If selecting and uploading via standard Assets should be allowed
+     * @var bool If selecting and uploading via standard Assets should be allowed
      */
-    public $enableAssetsInput;
+    public bool $enableAssetsInput = false;
 
     // Static
     // =========================================================================
@@ -85,12 +83,17 @@ class EscapeDamField extends Assets
         $this->inputJsClass = 'Craft.EscapeDam.DamSelectInput';
 
         $this->damImportLocationSource = $this->_folderSourceToVolumeSource($this->damImportLocationSource);
+
+        // Make sure that JSON is an allowed filekind if videos are an allowed filekind, because videos are imported as JSON files (similar to how the Embedded Assets plugin works)
+        if ($this->allowedKinds && \in_array(Asset::KIND_VIDEO, $this->allowedKinds) && !\in_array(Asset::KIND_JSON, $this->allowedKinds)) {
+            $this->allowedKinds[] = Asset::KIND_JSON;
+        }
     }
 
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
+    public function getSettingsHtml(): ?string
     {
         $this->damImportLocationSource = $this->_volumeSourceToFolderSource($this->damImportLocationSource);
         return parent::getSettingsHtml();
@@ -101,6 +104,7 @@ class EscapeDamField extends Assets
      *
      * @param ElementInterface|null $element
      * @return int
+     * @throws InvalidSubpathException
      */
     public function resolveDynamicPathToImportFolderId(ElementInterface $element = null): int
     {
@@ -113,9 +117,19 @@ class EscapeDamField extends Assets
     protected function inputTemplateVariables($value = null, ElementInterface $element = null): array
     {
         $variables = parent::inputTemplateVariables($value, $element);
+        $allowedKinds = $this->allowedKinds ?: [Asset::KIND_IMAGE];
+        $allKinds = AssetsHelper::getAllowedFileKinds();
+        $allowedExtensions = \array_reduce(\array_keys($allKinds), function (array $carry, string $key) use ($allKinds, $allowedKinds) {
+            if (!\in_array($key, $allowedKinds)) {
+                return $carry;
+            }
+            return \array_merge($carry, $allKinds[$key]['extensions']);
+        }, []);
+        $allowedExtensions = \array_values(\array_unique($allowedExtensions));
         return \array_merge($variables, [
             'enableAssetsInput' => $this->enableAssetsInput,
             'damSelectionLabel' => $this->damSelectionLabel ?: self::defaultDamSelectionLabel(),
+            'allowedExtensions' => $allowedExtensions,
         ]);
     }
 

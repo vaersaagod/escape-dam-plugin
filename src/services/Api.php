@@ -99,32 +99,22 @@ class Api extends Component
      * @param $id
      * @return array
      */
-    public function getFileDetailsById($id)
+    public function getFileDetailsById($id): array
     {
         $data = [];
         $siteIds = $this->getSiteIds();
         foreach ($siteIds as $siteId) {
             $response = $this->request('GET', "api/assets/$id?siteId=$siteId");
             $body = Json::decode((string)$response->getBody());
-            $data = \array_merge($data, [
-                'id' => (int)$body['id'],
-                'url' => $body['assetUrl'],
-                'imageUrl' => $body['imageUrl'],
-                'thumbUrl' => $body['thumbUrl'],
-                'extension' => $body['extension'],
-                'dateCreated' => $body['dateCreated'],
-                'dateUpdated' => $body['dateUpdated'],
-                'captureDate' => $body['captureDate'],
-                'mime' => $body['mime'],
-                'kind' => $body['kind'],
-                'width' => $body['width'],
-                'height' => $body['height'],
-                'size' => $body['size'],
-                'usageRestrictions' => $body['usageRestrictions'],
-                'copyrightNotice' => $body['copyrightNotice'],
-                'colorPalette' => $body['colorPalette'],
-                'focalPoint' => $body['focalPoint'],
-                'uploadedBy' => $body['uploadedBy'],
+            $values = \array_reduce(\array_keys($body), function (array $carry, string $key) use ($data, $body) {
+                // Discard fields that are irrelevant, unwanted or will be part of the localized data attribute
+                if (\in_array($key, ['url', 'damFilename', 'altText', 'description', 'credit', 'categories', 'userHasEdited', 'isFavorite', 'useCount'])) {
+                    return $carry;
+                }
+                $carry[$key] = $data[$key] ?? $body[$key] ?? null;
+                return $carry;
+            }, []);
+            $data = \array_merge($values, [
                 'localizedData' => \array_merge($data['localizedData'] ?? [], [
                     $body['language'] => [
                         'url' => $body['url'],

@@ -1,0 +1,35 @@
+{% set id = id ?? 'escapedam-video-' ~ random(9999999999999999) %}
+{% apply attr(attributes) %}
+    <video id="{{ id }}" preload="metadata" playsinline crossorigin="anonymous"></video>
+{% endapply %}
+{% if polyfill ?? true %}
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        (function () {
+            var then;
+            function pollHls(time) {
+                then = then || time;
+                if (!window.Hls) {
+                    if (!time || (time - then) < 2000) {
+                        requestAnimationFrame(pollHls);
+                    }
+                    return;
+                }
+                if (Hls && Hls.isSupported()) {
+                    var hls = new Hls();
+                    hls.loadSource(src)
+                    hls.attachMedia(video);
+                } else {
+                    console.error("This is a legacy browser that doesn't support Media Source Extensions");
+                }
+            }
+            var video = document.querySelector("#{{ id }}");
+            var src = "{{ src }}";
+            if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                video.src = src;
+            } else {
+                pollHls();
+            }
+        })();
+    </script>
+{% endif %}
