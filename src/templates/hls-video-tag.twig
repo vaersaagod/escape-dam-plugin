@@ -1,4 +1,4 @@
-{% set id = id ?? 'escapedam-video-' ~ random(9999999999999999) %}
+{% set id = id ?? ('escapedam-video-' ~ random(9999999999999999)) %}
 {% apply attr(attributes) %}
     <video id="{{ id }}" preload="metadata" playsinline crossorigin="anonymous"></video>
 {% endapply %}
@@ -23,7 +23,7 @@
                     console.error("This is a legacy browser that doesn't support Media Source Extensions");
                 }
             }
-            var video = document.querySelector("#{{ id }}");
+            var video = document.getElementById('{{ id }}');
             var src = "{{ src }}";
             if (video.canPlayType("application/vnd.apple.mpegurl")) {
                 video.src = src;

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.5.3 - 2022-03-02
+### Fixed
+- Fixes an issue where it wasn't possible to pass an `id` attribute to DAM video tags  
+
 ## 1.5.2 - 2022-01-31
 ### Fixed
 - Fixes a PHP 8.0 compatability issue

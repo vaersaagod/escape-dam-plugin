@@ -5,7 +5,9 @@ namespace escape\escapedam\behaviors;
 use Craft;
 
 use craft\elements\Asset;
+use craft\helpers\Html;
 use craft\helpers\Json;
+use craft\helpers\StringHelper;
 use craft\helpers\Template;
 use craft\web\View;
 use escape\escapedam\EscapeDam;
@@ -119,7 +121,12 @@ class EscapeDamFileBehavior extends Behavior
         if (!isset($params['poster'])) {
             $params['poster'] = MuxHelper::getImageUrl($this->getMuxPlaybackId());
         }
+        if (isset($params['id'])) {
+            $id = $params['id'];
+            unset($params['id']);
+        }
         return Template::raw(Craft::$app->getView()->renderTemplate('escapedam/hls-video-tag.twig', [
+            'id' => $id ?? null,
             'src' => $streamUrl,
             'polyfill' => $polyfill,
             'attributes' => $params,
