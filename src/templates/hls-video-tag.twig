@@ -1,35 +1,69 @@
-{% set id = id ?? ('escapedam-video-' ~ random(9999999999999999)) %}
-{% apply attr(attributes) %}
-    <video id="{{ id }}" preload="metadata" playsinline crossorigin="anonymous"></video>
-{% endapply %}
-{% if polyfill ?? true %}
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+{% apply spaceless %}
+
+    {% set id = (id ?? null)|default("escapedam-video-#{random(9999999999999999)}") %}
+
+    {% set polyfill = polyfill ?? true %}
+    {% set lazyload = lazyload ?? true %}
+
+    {% apply attr(attributes ?? {}) %}
+        <video id="{{ id }}" preload="metadata" playsinline crossorigin="anonymous"></video>
+    {% endapply %}
+
     <script>
         (function () {
-            var then;
-            function pollHls(time) {
-                then = then || time;
-                if (!window.Hls) {
-                    if (!time || (time - then) < 2000) {
-                        requestAnimationFrame(pollHls);
-                    }
-                    return;
-                }
-                if (Hls && Hls.isSupported()) {
-                    var hls = new Hls();
-                    hls.loadSource(src)
-                    hls.attachMedia(video);
-                } else {
-                    console.error("This is a legacy browser that doesn't support Media Source Extensions");
-                }
-            }
             var video = document.getElementById('{{ id }}');
             var src = "{{ src }}";
-            if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                video.src = src;
-            } else {
-                pollHls();
+            function init() {
+                var then;
+                function pollHls(time) {
+                    then = then || time;
+                    if (!window.Hls) {
+                        if (!time || (time - then) < 2000) {
+                            var hlsJsUrl = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+                            var polyfill = document.querySelector('script[src="' + hlsJsUrl + '"]');
+                            if (!polyfill) {
+                                polyfill = document.createElement('script');
+                                polyfill.setAttribute('src', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
+                                polyfill.onload = pollHls;
+                                document.body.appendChild(polyfill);
+                            }
+                            requestAnimationFrame(pollHls);
+                        }
+                        return;
+                    }
+                    if (Hls && Hls.isSupported()) {
+                        var hls = new Hls();
+                        hls.loadSource(src)
+                        hls.attachMedia(video);
+                    } else {
+                        console.error("This is a legacy browser that doesn't support Media Source Extensions");
+                    }
+                }
+                {% if polyfill %}
+                    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                        video.src = src;
+                    } else {
+                        pollHls();
+                    }
+                {% else %}
+                    video.src = src;
+                {% endif %}
             }
+            {% if lazyload %}
+                var observer = new IntersectionObserver(function (entries) {
+                    if (!entries[0].isIntersecting) {
+                        return;
+                    }
+                    init();
+                    observer.disconnect();
+                }, {
+                    rootMargin: '0px',
+                    threshold: [0, 0.5]
+                });
+                observer.observe(video);
+            {% else %}
+                init();
+            {% endif %}
         })();
     </script>
-{% endif %}
+{% endapply %}
