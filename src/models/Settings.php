@@ -1,8 +1,6 @@
 <?php
 
-
 namespace escape\escapedam\models;
-
 
 use craft\base\Model;
 
@@ -10,11 +8,14 @@ class Settings extends Model
 {
 
     /** @var string|null */
-    public $damUrl;
+    public ?string $damUrl;
 
     /** @var string|null */
-    public $jwtSecret;
+    public ?string $jwtSecret;
 
     /** @var array|null */
-    public $metaDataFieldMap;
+    public ?array $metaDataFieldMap;
+
+    /** @var float */
+    public float $hlsVideoLazyloadDelay = 0;
 }

@@ -4,71 +4,72 @@
 
     {% set polyfill = polyfill ?? true %}
     {% set lazyload = lazyload ?? true %}
+    {% set lazyloadDelay = lazyloadDelay ?? 0 %}
 
     {% apply attr(attributes ?? {}) %}
         <video id="{{ id }}" preload="metadata" playsinline crossorigin="anonymous"{% if not polyfill and not lazyload %} src="{{ src }}"{% endif %}></video>
     {% endapply %}
 
     {% if polyfill or lazyload %}
-
         <script>
-            (function () {
-                var video = document.getElementById('{{ id }}');
-                var src = "{{ src }}";
-                function init() {
-                    var then;
-                    function pollHls(time) {
-                        then = then || time;
-                        if (!window.Hls) {
-                            if (!time || (time - then) < 2000) {
-                                var hlsJsUrl = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-                                var polyfill = document.querySelector('script[src="' + hlsJsUrl + '"]');
-                                if (!polyfill) {
-                                    polyfill = document.createElement('script');
-                                    polyfill.setAttribute('src', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
-                                    polyfill.onload = pollHls;
-                                    document.body.appendChild(polyfill);
+            window.addEventListener('DOMContentLoaded', function () {
+                setTimeout(function () {
+                    var video = document.getElementById('{{ id }}');
+                    var src = "{{ src }}";
+                    function init() {
+                        var then;
+                        function pollHls(time) {
+                            then = then || time;
+                            if (!window.Hls) {
+                                if (!time || (time - then) < 2000) {
+                                    var hlsJsUrl = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+                                    var polyfill = document.querySelector('script[src="' + hlsJsUrl + '"]');
+                                    if (!polyfill) {
+                                        polyfill = document.createElement('script');
+                                        polyfill.setAttribute('src', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
+                                        polyfill.onload = pollHls;
+                                        document.body.appendChild(polyfill);
+                                    }
+                                    requestAnimationFrame(pollHls);
                                 }
-                                requestAnimationFrame(pollHls);
+                                return;
                             }
-                            return;
+                            if (Hls && Hls.isSupported()) {
+                                var hls = new Hls();
+                                hls.loadSource(src)
+                                hls.attachMedia(video);
+                            } else {
+                                console.error("This is a legacy browser that doesn't support Media Source Extensions");
+                            }
                         }
-                        if (Hls && Hls.isSupported()) {
-                            var hls = new Hls();
-                            hls.loadSource(src)
-                            hls.attachMedia(video);
-                        } else {
-                            console.error("This is a legacy browser that doesn't support Media Source Extensions");
-                        }
-                    }
-                    {% if polyfill %}
-                        if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                        {% if polyfill %}
+                            if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                                video.src = src;
+                            } else {
+                                pollHls();
+                            }
+                        {% else %}
                             video.src = src;
-                        } else {
-                            pollHls();
-                        }
+                        {% endif %}
+                    }
+                    {% if lazyload %}
+                        var observer = new IntersectionObserver(function (entries) {
+                            if (!entries[0].isIntersecting) {
+                                return;
+                            }
+                            init();
+                            observer.disconnect();
+                        }, {
+                            rootMargin: '0px',
+                            threshold: [0, 0.5]
+                        });
+                        observer.observe(video);
                     {% else %}
-                        video.src = src;
-                    {% endif %}
-                }
-                {% if lazyload %}
-                    var observer = new IntersectionObserver(function (entries) {
-                        if (!entries[0].isIntersecting) {
-                            return;
-                        }
                         init();
-                        observer.disconnect();
-                    }, {
-                        rootMargin: '0px',
-                        threshold: [0, 0.5]
-                    });
-                    observer.observe(video);
-                {% else %}
-                    init();
-                {% endif %}
-            })();
+                    {% endif %}
+                }, {{ lazyloadDelay * 1000 }});
+            });
         </script>
-
     {% endif %}
 
 {% endapply %}

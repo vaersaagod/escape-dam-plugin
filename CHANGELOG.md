@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.5.5 - 2022-03-28
+### Added
+- Added the `hlsVideoLazyloadDelay` config setting
+
 ## 1.5.4 - 2022-03-19
 ### Changed
 - DAM video tags and the Hls.js polyfill script now default to being lazyloaded

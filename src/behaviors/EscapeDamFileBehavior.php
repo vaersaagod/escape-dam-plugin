@@ -22,22 +22,23 @@ class EscapeDamFileBehavior extends Behavior
 {
 
     /** @var bool */
-    private $_isDamFile;
+    private bool $_isDamFile;
 
     /** @var bool */
-    private $_isDamVideo;
+    private bool $_isDamVideo;
 
     /** @var bool */
-    private $_isDamImage;
+    private bool $_isDamImage;
 
     /** @var string|null */
-    private $_muxPlaybackId;
+    private ?string $_muxPlaybackId;
 
     /** @var array|null */
-    private $_damVideoData;
+    private ?array $_damVideoData;
 
     /**
      * @return bool
+     * @throws \yii\base\InvalidConfigException
      */
     public function isDamFile(): bool
     {
@@ -49,6 +50,7 @@ class EscapeDamFileBehavior extends Behavior
 
     /**
      * @return bool
+     * @throws \yii\base\InvalidConfigException
      */
     public function isDamImage(): bool
     {
@@ -62,6 +64,7 @@ class EscapeDamFileBehavior extends Behavior
 
     /**
      * @return bool
+     * @throws \yii\base\InvalidConfigException
      */
     public function isDamVideo(): bool
     {
@@ -113,7 +116,7 @@ class EscapeDamFileBehavior extends Behavior
      * @throws \Twig\Error\SyntaxError
      * @throws \yii\base\Exception
      */
-    public function getDamVideoTag(array $params = [], bool $polyfill = true): ?\Twig\Markup
+    public function getDamVideoTag(array $params = [], bool $polyfill = true, bool $lazyload = true): ?\Twig\Markup
     {
         if (!$streamUrl = $this->getDamVideoStreamUrl()) {
             return null;
@@ -125,10 +128,13 @@ class EscapeDamFileBehavior extends Behavior
             $id = $params['id'];
             unset($params['id']);
         }
+        $lazyloadDelay = EscapeDam::getInstance()->getSettings()->hlsVideoLazyloadDelay;
         return Template::raw(Craft::$app->getView()->renderTemplate('escapedam/hls-video-tag.twig', [
             'id' => $id ?? null,
             'src' => $streamUrl,
             'polyfill' => $polyfill,
+            'lazyload' => $lazyload,
+            'lazyloadDelay' => $lazyloadDelay,
             'attributes' => $params,
         ], View::TEMPLATE_MODE_CP));
     }

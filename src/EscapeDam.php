@@ -89,6 +89,9 @@ class EscapeDam extends Plugin
      */
     public $hasCpSettings = false;
 
+    /** @var Settings|null */
+    private ?Settings $_settings = null;
+
     // Public Methods
     // =========================================================================
 
@@ -281,12 +284,23 @@ class EscapeDam extends Plugin
         );
     }
 
+    /**
+     * @return Settings
+     */
+    public function getSettings(): Settings
+    {
+        if ($this->_settings === null) {
+            $this->_settings = $this->createSettingsModel();
+        }
+        return $this->_settings;
+    }
+
     // Protected Methods
     // =========================================================================
     /**
      * @return Settings
      */
-    protected function createSettingsModel()
+    protected function createSettingsModel(): Settings
     {
         return new Settings();
     }
