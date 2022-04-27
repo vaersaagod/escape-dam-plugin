@@ -5,4 +5,5 @@ return [
     'jwtSecret' => '',
     'metaDataFieldMap' => [],
     'hlsVideoLazyloadDelay' => 0,
+    'hlsVideoLazyloadEvent' => 'DOMContentLoaded',
 ];

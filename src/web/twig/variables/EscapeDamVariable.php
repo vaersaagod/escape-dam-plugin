@@ -34,6 +34,14 @@ class EscapeDamVariable
     }
 
     /**
+     * @return Settings
+     */
+    public function getSettings(): Settings
+    {
+        return EscapeDam::getInstance()->getSettings();
+    }
+
+    /**
      * @param Asset $asset
      * @return mixed|null
      */

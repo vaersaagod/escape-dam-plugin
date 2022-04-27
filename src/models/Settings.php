@@ -18,4 +18,7 @@ class Settings extends Model
 
     /** @var float */
     public float $hlsVideoLazyloadDelay = 0;
+
+    /** @var string */
+    public string $hlsVideoLazyloadEvent = 'DOMContentLoaded';
 }

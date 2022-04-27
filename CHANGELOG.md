@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.5.6 - 2022-04-27
+### Added  
+- Added the `hlsVideoLazyloadEvent` config setting
+
 ## 1.5.5 - 2022-03-28
 ### Added
 - Added the `hlsVideoLazyloadDelay` config setting
