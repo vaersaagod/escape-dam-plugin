@@ -1,7 +1,8 @@
 <?php
 
-
 namespace escape\escapedam\helpers;
+
+use Craft;
 
 class FileHelper
 {
