@@ -248,7 +248,7 @@ class EscapeDam extends Plugin
         Event::on(
             Assets::class,
             Assets::EVENT_REGISTER_PREVIEW_HANDLER,
-            function (AssetPreviewEvent $event) {
+            static function (AssetPreviewEvent $event) {
                 $asset = $event->asset;
                 if ($asset->kind !== Asset::KIND_JSON || !$asset->getMuxPlaybackId()) {
                     return;

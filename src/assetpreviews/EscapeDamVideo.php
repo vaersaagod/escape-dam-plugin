@@ -6,6 +6,7 @@ use craft\assetpreviews\Text;
 use craft\base\AssetPreviewHandler;
 use craft\helpers\Html;
 use craft\helpers\UrlHelper;
+use craft\web\View;
 
 class EscapeDamVideo extends Text
 {
@@ -17,13 +18,8 @@ class EscapeDamVideo extends Text
         if (!$this->asset->getMuxPlaybackId()) {
             return parent::getPreviewHtml();
         }
-        return Html::modifyTagAttributes($this->asset->getDamVideoTag([
-            'controls' => true,
-            'autoplay' => true,
-            'poster' => false,
-        ]), [
-            'width' => '100%',
-            'height' => '100%',
-        ]);
+        return \Craft::$app->getView()->renderTemplate('escapedam/mux-video-preview.twig', [
+            'video' => $this->asset,
+        ], View::TEMPLATE_MODE_CP);
     }
 }

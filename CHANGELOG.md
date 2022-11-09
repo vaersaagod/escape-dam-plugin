@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleasd
+- Use MuxPlayer for video previews
+
 ## 1.5.7 - 2022-07-04
 ### Fixed 
 - Adds a missing use statement that could cause an exception if a file could not be downloaded  

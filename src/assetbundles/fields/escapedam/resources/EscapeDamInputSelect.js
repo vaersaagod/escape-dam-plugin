@@ -46,7 +46,7 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
             // Show super-awesome DAM modal
             if (!this.damModal) {
                 this.damModal = this.createDamModal({
-                    storageKey: window.location.href + '.' + this.settings.fieldId,
+                    storageKey: window.location.pathname + '.' + this.settings.fieldId,
                     onSelect: $.proxy(this.onDamModalSelect, this),
                     disabledFileIds: null, // TODO
                     allowedExtensions: this.settings.allowedExtensions
