@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleasd
+### Changed
 - Use MuxPlayer for video previews
+### Fixed
+- Fixes an issue where the storage key would be invalid if the DAM field was in a tab
 
 ## 1.5.7 - 2022-07-04
 ### Fixed 
