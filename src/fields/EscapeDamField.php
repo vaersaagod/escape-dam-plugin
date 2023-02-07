@@ -12,8 +12,6 @@ use craft\fields\Assets;
 use craft\helpers\Assets as AssetsHelper;
 use craft\helpers\FileHelper;
 
-use escape\escapedam\EscapeDam;
-
 use yii\base\InvalidConfigException;
 
 class EscapeDamField extends Assets
@@ -30,22 +28,22 @@ class EscapeDamField extends Assets
      * @var string|null Where files should be restricted to, in format
      * "folder:X", where X is the craft\models\VolumeFolder ID
      */
-    public $damImportLocationSource;
+    public ?string $damImportLocationSource;
 
     /**
      * @var string|null The subpath that files should be restricted to
      */
-    public $damImportLocationSubpath;
+    public ?string $damImportLocationSubpath;
 
     /**
      * @var string|null The label for the DAM selection input button
      */
-    public $damSelectionLabel;
+    public ?string $damSelectionLabel;
 
     /**
      * @var bool If selecting and uploading via native Assets should be allowed
      */
-    public $enableAssetsInput = true;
+    public bool $enableAssetsInput = true;
 
     // Static
     // =========================================================================
@@ -80,18 +78,9 @@ class EscapeDamField extends Assets
         $this->damImportLocationSource = $this->_folderSourceToVolumeSource($this->damImportLocationSource);
 
         // Make sure that JSON is an allowed filekind if videos are an allowed filekind, because videos are imported as JSON files (similar to how the Embedded Assets plugin works)
-        if ($this->allowedKinds && \in_array(Asset::KIND_VIDEO, $this->allowedKinds) && !\in_array(Asset::KIND_JSON, $this->allowedKinds)) {
+        if ($this->allowedKinds && \in_array(Asset::KIND_VIDEO, $this->allowedKinds, true) && !\in_array(Asset::KIND_JSON, $this->allowedKinds, true)) {
             $this->allowedKinds[] = Asset::KIND_JSON;
         }
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getSettingsHtml(): ?string
-    {
-        $this->damImportLocationSource = $this->_volumeSourceToFolderSource($this->damImportLocationSource);
-        return parent::getSettingsHtml();
     }
 
     /**
@@ -130,11 +119,12 @@ class EscapeDamField extends Assets
     /**
      * Convert a folder:UID source key to a volume:UID source key.
      *
-     * @param mixed $sourceKey
+     * @param string $sourceKey
+     * @return string
      */
-    private function _folderSourceToVolumeSource($sourceKey): string
+    private function _folderSourceToVolumeSource(string $sourceKey): string
     {
-        if ($sourceKey && is_string($sourceKey) && str_starts_with($sourceKey, 'folder:')) {
+        if ($sourceKey && str_starts_with($sourceKey, 'folder:')) {
             $parts = explode(':', $sourceKey);
             $folder = Craft::$app->getAssets()->getFolderByUid($parts[1]);
 
@@ -149,34 +139,17 @@ class EscapeDamField extends Assets
             }
         }
 
-        return (string)$sourceKey;
-    }
-
-    /**
-     * Convert a volume:UID source key to a folder:UID source key.
-     *
-     * @param mixed $sourceKey
-     */
-    private function _volumeSourceToFolderSource($sourceKey): string
-    {
-        if ($sourceKey && is_string($sourceKey) && str_starts_with($sourceKey, 'volume:')) {
-            $parts = explode(':', $sourceKey);
-            /** @var Volume|null $volume */
-            $volume = Craft::$app->getVolumes()->getVolumeByUid($parts[1]);
-            if ($volume && $folder = Craft::$app->getAssets()->getRootFolderByVolumeId($volume->id)) {
-                return 'folder:' . $folder->uid;
-            }
-        }
-        return (string)$sourceKey;
+        return $sourceKey;
     }
 
     /**
      * Determine an upload folder id by looking at the settings and whether Element this field belongs to is new or not.
      *
      * @param ElementInterface|null $element
-     * @param bool $createDynamicFolders whether missing folders should be created in the process
-     * @throws InvalidSubpathException if the folder subpath is not valid
-     * @throws InvalidVolumeException if there's a problem with the field's volume configuration
+     * @param bool $createDynamicFolders
+     * @return int
+     * @throws InvalidSubpathException
+     * @throws \craft\errors\VolumeException
      */
     private function _determineImportFolderId(ElementInterface $element = null, bool $createDynamicFolders = true): int
     {
@@ -217,14 +190,17 @@ class EscapeDamField extends Assets
     }
 
     /**
-     * Resolve a source path to it's folder ID by the source path and the matched source beginning.
+     * Resolve a source path to its folder ID by the source path and the matched source beginning.
      *
+     * @param string $uploadSource
+     * @param string|null $subpath
      * @param ElementInterface|null $element
-     * @param bool $createDynamicFolders whether missing folders should be created in the process
-     * @throws InvalidSubpathException if the subpath cannot be parsed in full
-     * @throws InvalidVolumeException if the volume root folder doesn’t exist
+     * @param bool $createDynamicFolders
+     * @return int
+     * @throws InvalidSubpathException
+     * @throws \craft\errors\VolumeException
      */
-    private function _resolveVolumePathToFolderId(string $uploadSource, string $subpath, ElementInterface $element = null, bool $createDynamicFolders = true): int
+    private function _resolveVolumePathToFolderId(string $uploadSource, ?string $subpath = '', ElementInterface $element = null, bool $createDynamicFolders = true): int
     {
         $assetsService = Craft::$app->getAssets();
         $volumeId = $this->_volumeIdBySourceKey($uploadSource);
@@ -247,8 +223,8 @@ class EscapeDamField extends Assets
             // Did any of the tokens return null?
             if (
                 $renderedSubpath === '' ||
-                trim((string)$renderedSubpath, '/') != $renderedSubpath ||
-                str_contains((string)$renderedSubpath, '//')
+                trim($renderedSubpath, '/') != $renderedSubpath ||
+                str_contains($renderedSubpath, '//')
             ) {
                 throw new InvalidSubpathException($subpath);
             }
