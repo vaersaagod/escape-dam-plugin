@@ -28,17 +28,17 @@ class EscapeDamField extends Assets
      * @var string|null Where files should be restricted to, in format
      * "folder:X", where X is the craft\models\VolumeFolder ID
      */
-    public ?string $damImportLocationSource;
+    public ?string $damImportLocationSource = null;
 
     /**
      * @var string|null The subpath that files should be restricted to
      */
-    public ?string $damImportLocationSubpath;
+    public ?string $damImportLocationSubpath = null;
 
     /**
      * @var string|null The label for the DAM selection input button
      */
-    public ?string $damSelectionLabel;
+    public ?string $damSelectionLabel = null;
 
     /**
      * @var bool If selecting and uploading via native Assets should be allowed
@@ -119,12 +119,16 @@ class EscapeDamField extends Assets
     /**
      * Convert a folder:UID source key to a volume:UID source key.
      *
-     * @param string $sourceKey
+     * @param string|null $sourceKey
      * @return string
      */
-    private function _folderSourceToVolumeSource(string $sourceKey): string
+    private function _folderSourceToVolumeSource(?string $sourceKey = null): string
     {
-        if ($sourceKey && str_starts_with($sourceKey, 'folder:')) {
+        if (!$sourceKey) {
+            return '';
+        }
+
+        if (str_starts_with($sourceKey, 'folder:')) {
             $parts = explode(':', $sourceKey);
             $folder = Craft::$app->getAssets()->getFolderByUid($parts[1]);
 
