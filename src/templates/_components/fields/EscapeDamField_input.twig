@@ -1,17 +1,4 @@
 {# @var craft \craft\web\twig\variables\CraftVariable #}
-{#
-/**
- * Escape DAM plugin for Craft CMS 3.x
- *
- * EscapeDamField Field Input
- *
- * @author    Værsågod
- * @copyright Copyright (c) 2019 Værsågod
- * @link      https://vaersaagod.no
- * @package   EscapeDam
- * @since     1.0.0
- */
-#}
 
 {% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\fields\\escapedam\\EscapeDamInputSelectAsset") %}
 
@@ -25,8 +12,8 @@
 {% set criteria = (criteria is defined and criteria ? criteria : null) -%}
 {% set storageKey = (storageKey is defined and storageKey ? storageKey : null) -%}
 
-<div id="{{ id }}" class="elementselect" style="display: flex;flex-wrap:wrap;width: 100%;">
-    <div class="elements" style="width: 100%;flex: 0 0 auto;">
+<div id="{{ id }}" class="escapedam elementselect">
+    <div class="elements {% if viewMode == 'large' %}flex-row flex-wrap{% endif %}">
         {% for element in elements %}
             {% include "_elements/element" with {
                 context: 'field',
@@ -34,13 +21,18 @@
             } %}
         {% endfor %}
     </div>
-    {# Select from DAM #}
-    <button type="button" class="btn add icon dashed escapedam" data-input="dam"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ damSelectionLabel }}</button>
-    {# Select from Assets #}
-    {% if enableAssetsInput %}
-        <button type="button" class="btn add icon dashed escapedam" data-input="assets"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ selectionLabel }}</button>
-    {% endif %}
+
+    <div class="flex flex-row flex-wrap">
+        {# Select from Assets #}
+        {% if enableAssetsInput %}
+            <button type="button" class="btn add icon dashed escapedam" data-input="assets"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ selectionLabel }}</button>
+        {% endif %}
+        {# Select from DAM #}
+        <button type="button" class="btn icon dashed escapedam" data-icon="download" data-input="dam"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ damSelectionLabel }}</button>
+        <div class="spinner hidden"></div>
+    </div>
 </div>
+
 
 {% do view.registerAssetBundle("craft\\web\\assets\\prismjs\\PrismJsAsset") %}
 
@@ -49,6 +41,7 @@
     name: name|namespaceInputName,
     elementType: elementType,
     sources: sources,
+    condition: condition ? condition.getConfig() : null,
     criteria: criteria,
     sourceElementId: sourceElementId,
     viewMode: viewMode,
@@ -58,8 +51,14 @@
     defaultFieldLayoutId: defaultFieldLayoutId,
     modalSettings: {hideSidebar: hideSidebar},
     assetsEnabled: enableAssetsInput ? true : false,
+    prevalidate: prevalidate ?? false,
     canUpload: false,
-    allowedExtensions
+    allowedExtensions,
+    modalSettings: {
+        hideSidebar: hideSidebar,
+        defaultSource: defaultUploadLocation
+    },
+    describedBy: (describedBy ?? false) ? describedBy|split(' ')|map(id => id|namespaceInputId)|join(' ') : null
 } %}
 
 {% js %}

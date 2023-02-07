@@ -1,116 +1,87 @@
-{# @var craft \craft\web\twig\variables\CraftVariable #}
-{#
-/**
- * Escape DAM plugin for Craft CMS
- *
- * EscapeDamField Field Settings
- *
- * @author    Værsågod
- * @copyright Copyright (c) 2019 Værsågod
- * @link      https://vaersaagod.no
- * @package   EscapeDam
- * @since     1.0.0
- */
-#}
-
-{% import "_includes/forms" as forms %}
-
 {% extends "_components/fieldtypes/elementfieldsettings" %}
-
 {% import "_includes/forms" as forms %}
 
-{% set fileKindOptions = field.getFileKindOptions() %}
-{% set isMatrix = 'craft\\fields\\Matrix' in craft.app.view.getNamespace() %}
-
-{% macro uploadLocationInput(name, field, inputSourceOptions) %}
-    {% from "_includes/forms" import select, text %}
-
-    <div class="flex">
-        <div>
-            {{ select({
-                id: name~'Source',
-                name: name~'Source',
-                options: inputSourceOptions,
-                value: field[name~'Source'],
-            }) }}
-        </div>
-        <div class="flex-grow">
-            {{ text({
-                id: name~'Subpath',
-                class: 'ltr',
-                name: name~'Subpath',
-                value: field[name~'Subpath'],
-                placeholder: "path/to/subfolder"|t('app')
-            }) }}
-        </div>
-    </div>
+{% macro uploadLocationField(config) %}
+    {% embed '_includes/forms/field' with config %}
+        {% block input %}
+            {% import '_includes/forms' as forms %}
+            <div class="flex flex-nowrap">
+                <div>
+                    {{ forms.select({
+                        name: "#{config.name}Source",
+                        options: config.sourceOptions,
+                        value: config.sourceValue,
+                        describedBy: describedBy,
+                    }) }}
+                </div>
+                <div class="flex-grow">
+                    {{ forms.text({
+                        class: 'ltr',
+                        name: "#{config.name}Subpath",
+                        value: config.subpathValue,
+                        placeholder: "path/to/subfolder"|t('app'),
+                        describedBy: describedBy,
+                    }) }}
+                </div>
+            </div>
+        {% endblock %}
+    {% endembed %}
 {% endmacro %}
-
-{% from _self import uploadLocationInput %}
-
-{% macro enableAssetsInputField(field) %}
-    {% from "_includes/forms" import checkboxField %}
-    {{ checkboxField({
-        label: "Enable standard Assets"|t('escapedam'),
-        id: 'enableAssetsInput-toggle',
-        name: 'enableAssetsInput',
-        class: 'enable-assets-input-cb',
-        value: 1,
-        checked: field.enableAssetsInput,
-        toggle: 'escape-dam-assets-input-settings'
-    }) }}
-{% endmacro %}
-
-{% from _self import enableAssetsInputField %}
 
 {% block fieldSettings %}
 
-    {% set damImportLocationNote = "Where should files be saved when they are imported from the DAM? Note that the subfolder path can contain variables like <code>{slug}</code> or <code>{author.username}</code>."|t('escapedam') %}
-    {% if isMatrix %}
+    {% set damImportLocationNote = "The subfolder path can contain variables like <code>{slug}</code> or <code>{author.username}</code>."|t('escapedam') %}
+    {% if 'craft\\fields\\Matrix' in craft.app.view.getNamespace() %}
         {% set damImportLocationNote = damImportLocationNote|replace({
             '{slug}': '{owner.slug}',
             '{author.username}': '{owner.author.username}'
         }) %}
     {% endif %}
 
-    {{ forms.field({
+    {% set allowedVolumesForImport = craft.escapedam.settings.allowedVolumesForImport|default(null) %}
+    {% if allowedVolumesForImport and allowedVolumesForImport is iterable %}
+        {% set allowedVolumesForImport = craft.app.volumes.allVolumes|reduce((carry, volume) => volume.handle in allowedVolumesForImport ? carry|push("volume:#{volume.uid}") : carry, []) %}
+    {% else %}
+        {% set allowedVolumesForImport = craft.app.volumes.allVolumes|map(volume => "volume:#{volume.uid}") %}
+    {% endif %}
+
+    {{ _self.uploadLocationField({
         label: "Import Location"|t('escapedam'),
-        instructions: damImportLocationNote,
-        errors: field.getErrors('damImportLocationSubpath')
-    }, uploadLocationInput('damImportLocation', field, sourceOptions)) }}
+        instructions: 'The location where files is saved to, when imported from the DAM.'|t('escapedam'),
+        errors: field.getErrors('damImportLocationSubpath'),
+        tip: damImportLocationNote,
+        name: 'damImportLocation',
+        sourceOptions: sourceOptions|filter(option => option.value in allowedVolumesForImport),
+        sourceValue: field.damImportLocationSource,
+        subpathValue: field.damImportLocationSubpath
+    }) }}
 
-    {% block fileTypesField %}
-        {{ forms.checkboxField({
-            label: "Restrict allowed file types?"|t('app'),
-            class: 'restrictFiles',
-            id: 'restrictFiles',
-            name: 'restrictFiles',
-            value: 1,
-            checked: field.restrictFiles,
-            toggle: 'restrict-allowed-types'
-        }) }}
+    {{ forms.checkboxField({
+        label: 'Restrict allowed file types'|t('app'),
+        class: 'restrictFiles',
+        id: 'restrictFiles',
+        name: 'restrictFiles',
+        value: 1,
+        checked: field.restrictFiles,
+        toggle: 'restrict-allowed-types'
+    }) }}
 
-        <div id="restrict-allowed-types" class="indent{{ not field.restrictFiles ? ' hidden' }}">
-            {% for option in fileKindOptions %}
-                {{ forms.checkboxField({
-                    label: option.label,
-                    id: 'allowedKinds-'~option.value,
-                    name: 'allowedKinds[]',
-                    value: option.value,
-                    checked: (option.value in field.allowedKinds)
-                }) }}
-            {% endfor %}
-            {{ forms.errorList(field.getErrors('allowedKinds')) }}
-        </div>
-    {% endblock %}
+    <fieldset id="restrict-allowed-types"{% if not field.restrictFiles %} class="hidden indent"{% endif %}>
+        {% for option in field.getFileKindOptions() %}
+            {{ forms.checkboxField({
+                label: option.label,
+                id: 'allowedKinds-'~option.value,
+                name: 'allowedKinds[]',
+                value: option.value,
+                checked: (option.value in field.allowedKinds)
+            }) }}
+        {% endfor %}
+        {{ forms.errorList(field.getErrors('allowedKinds')) }}
+    </fieldset>
 
-    {% filter replace(field.displayName()|lower, ('Files'|t('app'))|lower)|raw %}
-        {{ block('limitField') }}
-    {% endfilter %}
+    {{ block('limitFields')|replace(field.displayName()|lower, ('Files'|t('app'))|lower)|raw }}
 
-    {% filter replace('Choose how the field should look for authors.'|t('app'), 'Choose how selected files should look for authors.'|t('escapedam'))|raw %}
-        {{ block('viewModeField') }}
-    {% endfilter %}
+    {{ block('viewModeField') }}
 
     {{ forms.textField({
         label: "Selection Label"|t('app'),
@@ -122,58 +93,135 @@
         errors: field.getErrors('damSelectionLabel')
     }) }}
 
-    {{ forms.field({
-        label: 'Enable standard Assets input'|t('escapedam'),
-        instructions: "If checked, the user will be able to select and upload files using the standard Assets feature in addition to the Escape DAM functionality."|t('escapedam'),
-        errors: field.getErrors('enableAssetsInput')
-    }, enableAssetsInputField(field)) }}
+    <hr>
+
+    {{ forms.selectField({
+        id: 'preview-mode',
+        name: 'previewMode',
+        label: 'Preview Mode'|t('app'),
+        instructions: 'How the related {type} should be displayed within element indexes.'|t('app', {
+            type: pluralElementType,
+        }),
+        options: [
+            {label: 'Show thumbnails and titles'|t('app'), value: 'full'},
+            {label: 'Show thumbnails only'|t('app'), value: 'thumbs'},
+        ],
+        value: field.previewMode,
+        errors: field.getErrors('previewMode'),
+    }) }}
+
+    <hr>
+
+    {{ forms.checkboxField({
+        id: 'enableAssetsInput-toggle',
+        name: 'enableAssetsInput',
+        label: "Enable native assets"|t('escapedam'),
+        instructions: "If checked, the user will be able to select and upload files using the native Assets feature in addition to the Escape DAM functionality."|t('escapedam'),
+        class: 'enable-assets-input-cb',
+        value: 1,
+        checked: field.enableAssetsInput,
+        toggle: 'escape-dam-assets-input-settings'
+    }) }}
 
     <div id="escape-dam-assets-input-settings" class="indent{{ not field.enableAssetsInput ? ' hidden' }}">
 
-        {% block uploadLocationFields %}
+        {{ forms.checkboxField({
+            label: 'Restrict assets to a single location'|t('app'),
+            name: 'restrictLocation',
+            checked: field.restrictLocation,
+            toggle: 'restricted-location-settings',
+            reverseToggle: 'unrestricted-location-settings'
+        }) }}
 
-            {{ forms.checkboxField({
-                label: "Restrict assets uploads to a single folder?"|t('escapedam'),
-                id: 'useSingleFolder-toggle',
-                name: 'useSingleFolder',
-                class: 'use-single-folder-cb',
-                value: 1,
-                checked: field.useSingleFolder,
-                toggle: 'single-folder-settings',
-                reverseToggle: 'multi-folder-settings'
+        {% set dynamicPathTip = "The path can contain variables like `{slug}` or `{author.username}`."|t('app') %}
+        {% if 'craft\\fields\\Matrix' in craft.app.view.getNamespace() %}
+            {% set dynamicPathTip = dynamicPathTip|replace({
+                '{slug}': '{owner.slug}',
+                '{author.username}': '{owner.author.username}'
+            }) %}
+        {% endif %}
+
+        {% tag('div') with {
+            id: 'restricted-location-settings',
+            class: not field.restrictLocation ? 'hidden' : false,
+        } %}
+            {{ _self.uploadLocationField({
+                label: 'Asset Location'|t('app'),
+                instructions: 'The location where assets can be selected from.'|t('app'),
+                tip: dynamicPathTip,
+                name: 'restrictedLocation',
+                sourceOptions: sourceOptions,
+                sourceValue: field.restrictedLocationSource,
+                subpathValue: field.restrictedLocationSubpath,
+                errors: field.getErrors('restrictedLocationSubpath')
             }) }}
 
-            {% set uploadLocationNote = "Note that the subfolder path can contain variables like <code>{slug}</code> or <code>{author.username}</code>."|t('app') %}
-            {% if isMatrix %}
-                {% set uploadLocationNote = uploadLocationNote|replace({
-                    '{slug}': '{owner.slug}',
-                    '{author.username}': '{owner.author.username}'
-                }) %}
-            {% endif %}
+            {{ forms.checkboxField({
+                label: 'Allow subfolders'|t('app'),
+                name: 'allowSubfolders',
+                checked: field.allowSubfolders,
+                toggle: 'allow-subfolders-settings',
+            }) }}
 
-            <div id="multi-folder-settings"{% if field.useSingleFolder %} class="hidden"{% endif %}>
-                {{ block('sourcesField') }}
+            {% tag('div') with {
+                id: 'allow-subfolders-settings',
+                class: not field.allowSubfolders ? 'hidden' : false,
+            } %}
+                {{ forms.textField({
+                    class: 'ltr',
+                    name: 'restrictedDefaultUploadSubpath',
+                    label: 'Default Upload Location'|t('app'),
+                    value: field.restrictedDefaultUploadSubpath,
+                    instructions: 'Where assets should be stored (relative to **Asset Location**) when they are uploaded directly to the field.'|t('app'),
+                    tip: dynamicPathTip,
+                    placeholder: 'path/to/subfolder'|t('app'),
+                }) }}
+            {% endtag %}
+        {% endtag %}
 
-                {{ forms.field({
-                    label: "Default Upload Location"|t('app'),
-                    instructions: "Where should files be uploaded when they are dragged directly onto the field, or uploaded from the front end?"|t('app') ~' '~ uploadLocationNote,
-                    errors: field.getErrors('defaultUploadLocationSubpath')
-                }, uploadLocationInput('defaultUploadLocation', field, sourceOptions)) }}
-            </div>
+        {% tag('div') with {
+            id: 'unrestricted-location-settings',
+            class: field.restrictLocation ? 'hidden' : false,
+        } %}
+            {{ block('sourcesField') }}
 
-            <div id="single-folder-settings"{% if not field.useSingleFolder %} class="hidden"{% endif %}>
-                {{ forms.field({
-                    label: "Upload Location"|t('app'),
-                    instructions: uploadLocationNote,
-                    errors: field.getErrors('singleUploadLocationSubpath')
-                }, uploadLocationInput('singleUploadLocation', field, sourceOptions)) }}
-            </div>
-        {% endblock %}
+            {{ _self.uploadLocationField({
+                label: 'Default Upload Location'|t('app'),
+                instructions: 'Where assets should be stored when they are uploaded directly to the field.'|t('app'),
+                tip: dynamicPathTip,
+                name: 'defaultUploadLocation',
+                sourceOptions: sourceOptions,
+                sourceValue: field.defaultUploadLocationSource,
+                subpathValue: field.defaultUploadLocationSubpath,
+                errors: field.getErrors('defaultUploadLocationSubpath')
+            }) }}
+        {% endtag %}
+
+        <hr>
+
+        {{ block('selectionConditionField') }}
+
+        {{ forms.checkboxField({
+            label: 'Show unpermitted volumes'|t('app'),
+            instructions: 'Whether to show volumes that the user doesn’t have permission to view.'|t('app'),
+            id: 'showUnpermittedVolumes',
+            name: 'showUnpermittedVolumes',
+            checked: field.showUnpermittedVolumes,
+        }) }}
+
+        {{ forms.checkboxField({
+            label: 'Show unpermitted files'|t('app'),
+            instructions: 'Whether to show files that the user doesn’t have permission to view, per the “View files uploaded by other users” permission.'|t('app'),
+            id: 'showUnpermittedFiles',
+            name: 'showUnpermittedFiles',
+            checked: field.showUnpermittedFiles,
+        }) }}
 
         {{ block('selectionLabelField') }}
 
     </div>
 
-    {{ block('advancedSettings')|replace('escape dam', ('Files'|t('app'))|lower)|raw }}
+    {{ block('validateRelatedElementsField') }}
+    {{ block('advancedSettings') }}
 
 {% endblock %}

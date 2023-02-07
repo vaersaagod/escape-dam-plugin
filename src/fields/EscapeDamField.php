@@ -12,13 +12,19 @@ use craft\fields\Assets;
 use craft\helpers\Assets as AssetsHelper;
 use craft\helpers\FileHelper;
 
+use escape\escapedam\EscapeDam;
+
 use yii\base\InvalidConfigException;
 
 class EscapeDamField extends Assets
 {
 
+
     /** @inheritdoc */
-    public $allowUploads = false;
+    public bool $allowUploads = false;
+
+    /** @inheritdoc */
+    public ?string $viewMode = 'large';
 
     /**
      * @var string|null Where files should be restricted to, in format
@@ -37,9 +43,9 @@ class EscapeDamField extends Assets
     public $damSelectionLabel;
 
     /**
-     * @var bool If selecting and uploading via standard Assets should be allowed
+     * @var bool If selecting and uploading via native Assets should be allowed
      */
-    public $enableAssetsInput = false;
+    public $enableAssetsInput = true;
 
     // Static
     // =========================================================================
@@ -55,26 +61,15 @@ class EscapeDamField extends Assets
         return Craft::t('app', 'Escape DAM');
     }
 
-    /**
-     * @return string
-     */
-    public static function defaultSelectionLabel(): string
-    {
-        return Craft::t('escapedam', 'Select from Assets');
-    }
-
-    /**
-     * @return string
-     */
     public static function defaultDamSelectionLabel(): string
     {
-        return Craft::t('escapedam', 'Select from DAM');
+        return Craft::t('escapedam', 'Import from DAM');
     }
 
     /**
      * @inheritdoc
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -103,7 +98,6 @@ class EscapeDamField extends Assets
      * Resolve source path for DAM importing for this field.
      *
      * @param ElementInterface|null $element
-     * @return int
      * @throws InvalidSubpathException
      */
     public function resolveDynamicPathToImportFolderId(ElementInterface $element = null): int
@@ -119,7 +113,7 @@ class EscapeDamField extends Assets
         $variables = parent::inputTemplateVariables($value, $element);
         $allowedKinds = $this->allowedKinds ?: [Asset::KIND_IMAGE];
         $allKinds = AssetsHelper::getAllowedFileKinds();
-        $allowedExtensions = \array_reduce(\array_keys($allKinds), function (array $carry, string $key) use ($allKinds, $allowedKinds) {
+        $allowedExtensions = \array_reduce(\array_keys($allKinds), function(array $carry, string $key) use ($allKinds, $allowedKinds) {
             if (!\in_array($key, $allowedKinds)) {
                 return $carry;
             }
@@ -137,11 +131,10 @@ class EscapeDamField extends Assets
      * Convert a folder:UID source key to a volume:UID source key.
      *
      * @param mixed $sourceKey
-     * @return string
      */
     private function _folderSourceToVolumeSource($sourceKey): string
     {
-        if ($sourceKey && is_string($sourceKey) && strpos($sourceKey, 'folder:') === 0) {
+        if ($sourceKey && is_string($sourceKey) && str_starts_with($sourceKey, 'folder:')) {
             $parts = explode(':', $sourceKey);
             $folder = Craft::$app->getAssets()->getFolderByUid($parts[1]);
 
@@ -150,7 +143,7 @@ class EscapeDamField extends Assets
                     /** @var Volume $volume */
                     $volume = $folder->getVolume();
                     return 'volume:' . $volume->uid;
-                } catch (InvalidConfigException $e) {
+                } catch (InvalidConfigException) {
                     // The volume is probably soft-deleted. Just pretend the folder didn't exist.
                 }
             }
@@ -163,11 +156,10 @@ class EscapeDamField extends Assets
      * Convert a volume:UID source key to a folder:UID source key.
      *
      * @param mixed $sourceKey
-     * @return string
      */
     private function _volumeSourceToFolderSource($sourceKey): string
     {
-        if ($sourceKey && is_string($sourceKey) && strpos($sourceKey, 'volume:') === 0) {
+        if ($sourceKey && is_string($sourceKey) && str_starts_with($sourceKey, 'volume:')) {
             $parts = explode(':', $sourceKey);
             /** @var Volume|null $volume */
             $volume = Craft::$app->getVolumes()->getVolumeByUid($parts[1]);
@@ -183,7 +175,6 @@ class EscapeDamField extends Assets
      *
      * @param ElementInterface|null $element
      * @param bool $createDynamicFolders whether missing folders should be created in the process
-     * @return int
      * @throws InvalidSubpathException if the folder subpath is not valid
      * @throws InvalidVolumeException if there's a problem with the field's volume configuration
      */
@@ -210,7 +201,7 @@ class EscapeDamField extends Assets
         } catch (InvalidSubpathException $e) {
             // If this is a new/disabled element, the subpath probably just contained a token that returned null, like {id}
             // so use the user's upload folder instead
-            if ($element === null || !$element->id || !$element->enabled || !$createDynamicFolders) {
+            if ($element === null || !$element->getId() || !$element->enabled || !$createDynamicFolders) {
                 $userFolder = $assets->getUserTemporaryUploadFolder();
                 $folderId = $userFolder->id;
             } else {
@@ -228,11 +219,8 @@ class EscapeDamField extends Assets
     /**
      * Resolve a source path to it's folder ID by the source path and the matched source beginning.
      *
-     * @param string $uploadSource
-     * @param string $subpath
      * @param ElementInterface|null $element
      * @param bool $createDynamicFolders whether missing folders should be created in the process
-     * @return int
      * @throws InvalidSubpathException if the subpath cannot be parsed in full
      * @throws InvalidVolumeException if the volume root folder doesn’t exist
      */
@@ -259,13 +247,13 @@ class EscapeDamField extends Assets
             // Did any of the tokens return null?
             if (
                 $renderedSubpath === '' ||
-                trim($renderedSubpath, '/') != $renderedSubpath ||
-                strpos($renderedSubpath, '//') !== false
+                trim((string)$renderedSubpath, '/') != $renderedSubpath ||
+                str_contains((string)$renderedSubpath, '//')
             ) {
                 throw new InvalidSubpathException($subpath);
             }
             // Sanitize the subpath
-            $segments = explode('/', $renderedSubpath);
+            $segments = explode('/', (string)$renderedSubpath);
             foreach ($segments as &$segment) {
                 $segment = FileHelper::sanitizeFilename($segment, [
                     'asciiOnly' => Craft::$app->getConfig()->getGeneral()->convertFilenamesToAscii
@@ -283,7 +271,7 @@ class EscapeDamField extends Assets
                     throw new InvalidSubpathException($subpath);
                 }
                 $volume = Craft::$app->getVolumes()->getVolumeById($volumeId);
-                $folderId = $assetsService->ensureFolderByFullPathAndVolume($subpath, $volume);
+                $folderId = $assetsService->ensureFolderByFullPathAndVolume($subpath, $volume)->id;
             } else {
                 $folderId = $folder->id;
             }

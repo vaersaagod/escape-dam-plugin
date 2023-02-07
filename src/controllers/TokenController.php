@@ -14,6 +14,6 @@ class TokenController extends Controller
      */
     public function actionGetToken()
     {
-        return EscapeDam::$plugin->users->getDamToken();
+        return EscapeDam::getInstance()->users->getDamToken();
     }
 }

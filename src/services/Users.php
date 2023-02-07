@@ -19,7 +19,6 @@ use \Firebase\JWT\JWT;
 class Users extends Component
 {
     /**
-     * @return string
      * @throws \craft\errors\SiteNotFoundException
      */
     public function getDamToken(int $userId = null): string
@@ -36,7 +35,7 @@ class Users extends Component
             }
         }
         /** @var Settings $settings */
-        $settings = EscapeDam::$plugin->getSettings();
+        $settings = EscapeDam::getInstance()->getSettings();
         $jwtSecret = $settings->jwtSecret;
         $now = DateTimeHelper::currentTimeStamp();
         $payload = [
@@ -49,6 +48,6 @@ class Users extends Component
                 'lastName' => $user->lastName,
             ],
         ];
-        return JWT::encode($payload, $jwtSecret);
+        return JWT::encode($payload, $jwtSecret, 'HS256');
     }
 }

@@ -13,7 +13,7 @@ class EscapeDamVideo extends Text
     /**
      * @inheritdoc
      */
-    public function getPreviewHtml(): string
+    public function getPreviewHtml(array $variables = []): string
     {
         if (!$this->asset->getMuxPlaybackId()) {
             return parent::getPreviewHtml();

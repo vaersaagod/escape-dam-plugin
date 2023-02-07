@@ -28,8 +28,7 @@ class Api extends Component
     /** @var array|null */
     protected $sites;
 
-    /** @var int|null */
-    private $_userId = null;
+    private ?int $_userId = null;
 
     // Public Methods
     // =========================================================================
@@ -37,14 +36,14 @@ class Api extends Component
     /**
      * @inheritdoc
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
         /** @var Settings $settings */
         $settings = EscapeDam::getInstance()->getSettings();
 
-        if (!isset($this->client)) {
+        if ($this->client === null) {
             $this->client = Craft::createGuzzleClient([
                 'base_uri' => \rtrim($settings->damUrl, '/') . '/',
             ]);
@@ -55,28 +54,20 @@ class Api extends Component
      * Sets a User to the API service
      * This user will act as the current user for subsequent API requests
      * We have to do this to generate bearer tokens in console requests, which can't read the session cookie
-     *
-     * @param User $user
      */
     public function setUser(User $user)
     {
-        $this->setUserId($user->id);
+        $this->setUserId($user->getId());
     }
 
-    /**
-     * @param int $userId
-     */
     public function setUserId(int $userId)
     {
         $this->_userId = $userId;
     }
 
-    /**
-     * @return array
-     */
     public function getSites(): array
     {
-        if (!isset($this->sites)) {
+        if ($this->sites === null) {
             $response = $this->request('GET', 'actions/escape-dam-module/default/get-sites');
             $body = Json::decode((string)$response->getBody());
             $this->sites = $body['data'] ?? [];
@@ -84,20 +75,14 @@ class Api extends Component
         return $this->sites;
     }
 
-    /**
-     * @return array
-     */
     public function getSiteIds(): array
     {
         $sites = $this->getSites() ?? [];
-        return \array_map(function (array $site) {
-            return (int)$site['id'];
-        }, $sites);
+        return \array_map(fn(array $site) => (int)$site['id'], $sites);
     }
 
     /**
      * @param $id
-     * @return array
      */
     public function getFileDetailsById($id): array
     {
@@ -134,7 +119,6 @@ class Api extends Component
     /**
      * Query for DAM files matching a given Asset by extension and filename
      *
-     * @param Asset $asset
      * @return array|mixed|null
      * @throws \yii\base\InvalidConfigException
      */
@@ -195,10 +179,6 @@ class Api extends Component
     }
 
     /**
-     * @param string $method
-     * @param string $uri
-     * @param array $options
-     * @return ResponseInterface
      * @throws RequestException
      */
     public function request(string $method, string $uri, array $options = []): ResponseInterface
@@ -208,7 +188,7 @@ class Api extends Component
             'headers' => [
                 'Authorization' => 'Bearer ' . EscapeDam::getInstance()->users->getDamToken($this->_userId),
                 'Accept' => 'application/json',
-                'X-Craft-System' => 'craft:' . Craft::$app->getVersion() . ';' . strtolower(Craft::$app->getEditionName()),
+                'X-Craft-System' => 'craft:' . Craft::$app->getVersion() . ';' . strtolower((string) Craft::$app->getEditionName()),
             ],
         ]);
 

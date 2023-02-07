@@ -18,35 +18,34 @@ class EscapeDamVariable
      * @return string
      * @throws \craft\errors\SiteNotFoundException
      */
-    public function getDamToken()
+    public function getDamToken(): string
     {
-        return EscapeDam::$plugin->users->getDamToken();
+        return EscapeDam::getInstance()->users->getDamToken();
     }
 
     /**
      * @return string|null
      */
-    public function getDamUrl()
+    public function getDamUrl(): ?string
     {
         /** @var Settings $settings */
-        $settings = EscapeDam::$plugin->getSettings();
+        $settings = EscapeDam::getInstance()->getSettings();
         return $settings->damUrl;
     }
 
-    /**
-     * @return Settings
-     */
     public function getSettings(): Settings
     {
         return EscapeDam::getInstance()->getSettings();
     }
 
     /**
-     * @param Asset $asset
      * @return mixed|null
      */
-    public function getFileForImportedAsset(Asset $asset)
+    public function getFileForImportedAsset(?Asset $asset)
     {
+        if (!$asset instanceof Asset) {
+            return null;
+        }
         return EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
     }
 }

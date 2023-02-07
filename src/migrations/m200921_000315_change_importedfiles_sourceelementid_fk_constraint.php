@@ -18,9 +18,9 @@ class m200921_000315_change_importedfiles_sourceelementid_fk_constraint extends 
     public function safeUp()
     {
         $this->alterColumn('{{%escapedam_importedfiles}}', 'fieldId', $this->integer()->null());
-        $this->dropForeignKey($this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'fieldId'), '{{%escapedam_importedfiles}}');
+        $this->dropForeignKey($this->db->getForeignKeyName(), '{{%escapedam_importedfiles}}');
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'fieldId'),
+            $this->db->getForeignKeyName(),
             '{{%escapedam_importedfiles}}',
             'fieldId',
             '{{%fields}}',
@@ -28,9 +28,9 @@ class m200921_000315_change_importedfiles_sourceelementid_fk_constraint extends 
             'SET NULL',
             'CASCADE'
         );
-        $this->dropForeignKey($this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'sourceElementId'), '{{%escapedam_importedfiles}}');
+        $this->dropForeignKey($this->db->getForeignKeyName(), '{{%escapedam_importedfiles}}');
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'sourceElementId'),
+            $this->db->getForeignKeyName(),
             '{{%escapedam_importedfiles}}',
             'sourceElementId',
             '{{%elements}}',

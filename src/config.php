@@ -6,4 +6,5 @@ return [
     'metaDataFieldMap' => [],
     'hlsVideoLazyloadDelay' => 0,
     'hlsVideoLazyloadEvent' => 'DOMContentLoaded',
+    'pluginName' => null,
 ];

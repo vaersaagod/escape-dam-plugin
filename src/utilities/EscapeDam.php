@@ -5,6 +5,8 @@ namespace escape\escapedam\utilities;
 use Craft;
 use craft\base\Utility;
 
+use escape\escapedam\EscapeDam as Plugin;
+
 /**
  * Class EscapeDam
  */
@@ -16,7 +18,7 @@ class EscapeDam extends Utility
      */
     public static function displayName(): string
     {
-        return Craft::t('app', 'Escape DAM');
+        return Plugin::getInstance()->getSettings()->pluginName ?? 'Escape DAM';
     }
 
     /**
@@ -30,7 +32,7 @@ class EscapeDam extends Utility
     /**
      * @inheritdoc
      */
-    public static function iconPath()
+    public static function iconPath(): ?string
     {
         return Craft::getAlias('@escape/escapedam/icon.svg');
     }

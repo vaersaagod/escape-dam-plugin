@@ -33,11 +33,11 @@ class FileHelper
             \curl_setopt_array($ch, $options);
             \curl_exec($ch);
 
-            if (\curl_errno($ch)) {
+            if (\curl_errno($ch) !== 0) {
                 $errorMessage = \curl_error($ch);
             }
 
-            $httpStatus = \intval(\curl_getinfo($ch, CURLINFO_HTTP_CODE));
+            $httpStatus = (int) \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             \curl_close($ch);
             \fclose($fp);

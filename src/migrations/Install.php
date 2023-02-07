@@ -46,12 +46,6 @@ class Install extends Migration
         return true;
     }
 
-    // Protected Methods
-    // =========================================================================
-
-    /**
-     * @return bool
-     */
     protected function createTables(): bool
     {
         $tablesCreated = false;
@@ -86,11 +80,7 @@ class Install extends Migration
     protected function createIndexes()
     {
         $this->createIndex(
-            $this->db->getIndexName(
-                '{{%escapedam_importedfiles}}',
-                'damId',
-                false
-            ),
+            $this->db->getIndexName(),
             '{{%escapedam_importedfiles}}',
             'damId',
             false
@@ -103,7 +93,7 @@ class Install extends Migration
     protected function addForeignKeys()
     {
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'assetId'),
+            $this->db->getForeignKeyName(),
             '{{%escapedam_importedfiles}}',
             'assetId',
             '{{%assets}}',
@@ -112,7 +102,7 @@ class Install extends Migration
             'CASCADE'
         );
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'fieldId'),
+            $this->db->getForeignKeyName(),
             '{{%escapedam_importedfiles}}',
             'fieldId',
             '{{%fields}}',
@@ -121,7 +111,7 @@ class Install extends Migration
             'CASCADE'
         );
         $this->addForeignKey(
-            $this->db->getForeignKeyName('{{%escapedam_importedfiles}}', 'sourceElementId'),
+            $this->db->getForeignKeyName(),
             '{{%escapedam_importedfiles}}',
             'sourceElementId',
             '{{%elements}}',

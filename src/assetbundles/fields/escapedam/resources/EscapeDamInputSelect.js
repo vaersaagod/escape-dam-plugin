@@ -7,8 +7,6 @@ if (!Craft.EscapeDam) {
     Craft.EscapeDam = {};
 }
 
-// TODO wtf to do about drag-to-upload
-
 Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
 
     super: Craft.AssetSelectInput.prototype,
@@ -44,10 +42,15 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
             this.super.showModal.apply(this, arguments);
         } else {
             // Show super-awesome DAM modal
+            var _this = this;
             if (!this.damModal) {
                 this.damModal = this.createDamModal({
                     storageKey: window.location.pathname + '.' + this.settings.fieldId,
                     onSelect: $.proxy(this.onDamModalSelect, this),
+                    onHide: function() {
+                        _this.$addElementBtn.focus();
+                        console.log('modal closed');
+                    },
                     disabledFileIds: null, // TODO
                     allowedExtensions: this.settings.allowedExtensions
                 });
@@ -129,7 +132,7 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
                 Craft.postActionRequest('elements/get-element-html', {
                     elementId: assetId,
                     siteId: this.settings.criteria.siteId,
-                    size: this.settings.viewMode
+                    thumbSize: this.settings.viewMode
                 }, function(data) {
                     if (data.error) {
                         alert(data.error);
@@ -155,12 +158,7 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
         } else {
             this.progressBar.hideProgressBar();
             this.$container.removeClass('uploading');
-            if (window.draftEditor) {
-                window.draftEditor.checkForm();
-            }
-            try {
-                this.$addElementBtn.focus();
-            } catch (error) {}
+            this.$addElementBtn.focus();
         }
         Craft.cp.runQueue();
     },

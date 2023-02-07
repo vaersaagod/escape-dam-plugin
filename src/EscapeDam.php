@@ -16,10 +16,12 @@ use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\AssetPreviewEvent;
 use craft\events\DefineBehaviorsEvent;
+use craft\events\DefineHtmlEvent;
 use craft\events\ElementEvent;
 use craft\events\GetAssetThumbUrlEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
+use craft\events\RegisterUrlRulesEvent;
 use craft\events\SetElementTableAttributeHtmlEvent;
 use craft\events\TemplateEvent;
 use craft\helpers\ElementHelper;
@@ -32,6 +34,7 @@ use craft\services\Fields;
 use craft\services\Plugins;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
+use craft\web\UrlManager;
 use craft\web\View;
 
 use escape\escapedam\assetbundles\cp\EscapeDamCpAsset;
@@ -77,17 +80,17 @@ class EscapeDam extends Plugin
     /**
      * @var string
      */
-    public $schemaVersion = '1.2.0';
+    public string $schemaVersion = '1.2.0';
 
     /**
      * @var bool
      */
-    public $hasCpSection = true;
+    public bool $hasCpSection = true;
 
     /**
      * @var bool
      */
-    public $hasCpSettings = false;
+    public bool $hasCpSettings = false;
 
     /** @var Settings|null */
     private ?Settings $_settings = null;
@@ -100,8 +103,8 @@ class EscapeDam extends Plugin
      */
     public function init()
     {
+
         parent::init();
-        self::$plugin = $this;
 
         // Register services
         $this->setComponents([
@@ -116,7 +119,6 @@ class EscapeDam extends Plugin
             Fields::EVENT_REGISTER_FIELD_TYPES,
             function (RegisterComponentTypesEvent $event) {
                 $event->types[] = EscapeDamField::class;
-                $event->types[] = EscapeDamLinkField::class;
             }
         );
 
@@ -169,7 +171,7 @@ class EscapeDam extends Plugin
                 if (ElementHelper::isDraftOrRevision($element) || !$fieldLayout = $element->getFieldLayout()) {
                     return;
                 }
-                $fields = $fieldLayout->getFields();
+                $fields = $fieldLayout->getCustomFields();
                 foreach ($fields as $field) {
                     if (!$field instanceof EscapeDamField) {
                         continue;
@@ -180,7 +182,7 @@ class EscapeDam extends Plugin
                         continue;
                     }
                     try {
-                        EscapeDam::$plugin->files->relateImportedAssetToElement($assetIds, (int)$field->id, (int)$element->id);
+                        EscapeDam::getInstance()->files->relateImportedAssetToElement($assetIds, (int)$field->id, (int)$element->getId());
                     } catch (\Throwable $e) {
                         Craft::$app->getErrorHandler()->logException($e);
                         if (Craft::$app->getConfig()->getGeneral()->devMode) {
@@ -191,9 +193,16 @@ class EscapeDam extends Plugin
             }
         );
 
-        Craft::$app->getView()->hook('cp.assets.edit.meta', function (array $context) {
-            return Craft::$app->getView()->renderTemplate('escapedam/_components/hooks/element-edit-meta', $context);
-        });
+        Event::on(
+            Element::class,
+            Element::EVENT_DEFINE_META_FIELDS_HTML,
+            static function (DefineHtmlEvent $event) {
+                if (!$event->sender instanceof Asset) {
+                    return;
+                }
+                $event->html .= \Craft::$app->getView()->renderTemplate('escapedam/_hooks/dam-link.twig', ['asset' => $event->sender]);
+            }
+        );
 
         Event::on(Asset::class, Element::EVENT_REGISTER_TABLE_ATTRIBUTES, function (RegisterElementTableAttributesEvent $event) {
             $event->tableAttributes['_escapedam_url'] = Craft::t('site', 'DAM Link');
@@ -201,35 +210,21 @@ class EscapeDam extends Plugin
 
         Event::on(Asset::class, Element::EVENT_SET_TABLE_ATTRIBUTE_HTML, function (SetElementTableAttributeHtmlEvent $event) {
             $attribute = $event->attribute;
-            if ($attribute === '_escapedam_url') {
-                /** @var Asset $asset */
-                $asset = $event->sender;
-                $damFile = EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
-                if ($damFile) {
-                    $damUrl = EscapeDam::getInstance()->getSettings()->damUrl;
-                    if ($damUrl) {
-                        $fileUrl = UrlHelper::url(\rtrim($damUrl, '/')) . "/edit/{$damFile['id']}";
-                        $event->html = Html::a('Open in DAM', $fileUrl, [
-                            'target' => '_blank',
-                            'rel' => 'noopener noreferrer',
-                            'class' => 'btn',
-                            'data-icon' => 'external',
-                        ]);
-                    } else {
-                        $event->html = '';
-                    }
-                } else {
-                    $event->html = '';
-                }
-                $event->handled = true;
+            if ($attribute === '_escapedam_url' && $event->sender instanceof Asset && $damUrl = $event->sender->getDamUrl()) {
+                $event->html = Html::a('Open in DAM', $damUrl, [
+                    'target' => '_blank',
+                    'rel' => 'noopener noreferrer',
+                    'class' => 'btn small',
+                    'data-icon' => 'external',
+                ]);
             }
         });
 
         // Replace asset thumbs for DAM-imported videos (which are stored as json, Embedded Assets-style)
         Event::on(
             Assets::class,
-            Assets::EVENT_GET_ASSET_THUMB_URL,
-            function (GetAssetThumbUrlEvent $event) {
+            Assets::EVENT_DEFINE_THUMB_URL,
+            function (\craft\events\DefineAssetThumbUrlEvent $event) {
                 $asset = $event->asset;
                 if ($asset->kind !== Asset::KIND_JSON || !$this->files->isImportedAsset($asset)) {
                     return;
@@ -274,6 +269,15 @@ class EscapeDam extends Plugin
             }
         );
 
+        Event::on(
+            UrlManager::class,
+            UrlManager::EVENT_REGISTER_CP_URL_RULES,
+            function(RegisterUrlRulesEvent $event) {
+                $cpSectionPath = $this->getSettings()->cpSectionPath ?? 'escapedam';
+                $event->rules[$cpSectionPath] = ['template' => 'escapedam/_index'];
+            }
+        );
+
         Craft::info(
             Craft::t(
                 'escapedam',
@@ -284,9 +288,17 @@ class EscapeDam extends Plugin
         );
     }
 
-    /**
-     * @return Settings
-     */
+    public function getCpNavItem(): ?array
+    {
+        $navItem = parent::getCpNavItem();
+        if (empty($navItem)) {
+            return null;
+        }
+        $navItem['label'] = $this->getSettings()->pluginName ?? 'Escape DAM';
+        $navItem['url'] = $this->getSettings()->cpSectionPath ?? 'escapedam';
+        return $navItem;
+    }
+
     public function getSettings(): Settings
     {
         if ($this->_settings === null) {
@@ -295,22 +307,16 @@ class EscapeDam extends Plugin
         return $this->_settings;
     }
 
-    // Protected Methods
-    // =========================================================================
-    /**
-     * @return Settings
-     */
     protected function createSettingsModel(): Settings
     {
         return new Settings();
     }
 
     /**
-     * @return string|null
-     * @throws \Twig_Error_Loader
+     * @throws \Twig\Error\LoaderError
      * @throws \yii\base\Exception
      */
-    protected function settingsHtml()
+    protected function settingsHtml(): ?string
     {
         return Craft::$app->getView()->renderTemplate('escapedam/settings', [
             'settings' => $this->getSettings(),

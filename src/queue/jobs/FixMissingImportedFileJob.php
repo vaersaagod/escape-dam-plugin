@@ -47,13 +47,13 @@ class FixMissingImportedFileJob extends BaseJob implements RetryableJobInterface
     }
 
     /** @inheritdoc */
-    public function execute($queue)
+    public function execute($queue): void
     {
 
         App::maxPowerCaptain();
 
         $count = 0;
-        $total = \count($this->assetIds);
+        $total = $this->assetIds === null ? 0 : \count($this->assetIds);
 
         foreach ($this->assetIds as $assetId) {
 
@@ -69,7 +69,7 @@ class FixMissingImportedFileJob extends BaseJob implements RetryableJobInterface
                 ->siteId($this->siteId)
                 ->one();
 
-            if (!$asset || !!EscapeDam::getInstance()->files->getFileForImportedAsset($asset)) {
+            if (!$asset || (bool) EscapeDam::getInstance()->files->getFileForImportedAsset($asset)) {
                 continue;
             }
 
@@ -83,7 +83,7 @@ class FixMissingImportedFileJob extends BaseJob implements RetryableJobInterface
 
             foreach ($result as $damFileData) {
                 // Check the extension
-                if (\strtolower($damFileData['extension']) !== \strtolower($asset->getExtension())) {
+                if (\strtolower((string) $damFileData['extension']) !== \strtolower($asset->getExtension())) {
                     continue;
                 }
                 // Compare the width and height

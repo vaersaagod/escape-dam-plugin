@@ -16,7 +16,6 @@ class FilesController extends Controller
 {
 
     /**
-     * @return Response
      * @throws BadRequestHttpException
      */
     public function actionImportFile(): Response
@@ -37,7 +36,7 @@ class FilesController extends Controller
         // Has the file already been imported?
         $asset = EscapeDam::getInstance()->files->getImportedAsset($fileId, $fieldId, $elementId);
 
-        if (!$asset) {
+        if (!$asset instanceof \craft\elements\Asset) {
             try {
                 $asset = EscapeDam::getInstance()->files->importFile($fileId, $fieldId, $elementId, $siteId, $folderId);
             } catch (\Throwable $e) {
@@ -49,8 +48,8 @@ class FilesController extends Controller
 
         return $this->asJson([
             'success' => true,
-            'filename' => $asset->filename,
-            'assetId' => (int)$asset->id
+            'filename' => $asset->getFilename(),
+            'assetId' => (int)$asset->getId()
         ]);
         
     }

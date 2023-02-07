@@ -8,15 +8,11 @@ class MuxHelper
 {
 
     /** @var string */
-    const MUX_STREAMING_DOMAIN = 'https://stream.mux.com';
+    final const MUX_STREAMING_DOMAIN = 'https://stream.mux.com';
 
     /** @var string */
-    const MUX_IMAGE_DOMAIN = 'https://image.mux.com';
+    final const MUX_IMAGE_DOMAIN = 'https://image.mux.com';
 
-    /**
-     * @param string|null $playbackId
-     * @return string|null
-     */
     public static function getStreamUrl(?string $playbackId): ?string
     {
         if (!$playbackId) {
@@ -25,11 +21,6 @@ class MuxHelper
         return static::MUX_STREAMING_DOMAIN . '/' . $playbackId . '.m3u8';
     }
 
-    /**
-     * @param string|null $playbackId
-     * @param array $params
-     * @return string|null
-     */
     public static function getImageUrl(?string $playbackId, array $params = []): ?string
     {
 
@@ -40,7 +31,7 @@ class MuxHelper
         $format = 'jpg';
 
         if (isset($params['format'])) {
-            $format = \strtolower($params['format']);
+            $format = \strtolower((string) $params['format']);
             unset($params['format']);
         }
 
@@ -71,21 +62,12 @@ class MuxHelper
         }, []);
 
         if (!isset($params['fit_mode'])) {
-            if (($params['width'] ?? null) && ($params['height'])) {
-                $params['fit_mode'] = 'smartcrop';
-            } else {
-                $params['fit_mode'] = 'preserve';
-            }
+            $params['fit_mode'] = ($params['width'] ?? null) && ($params['height']) ? 'smartcrop' : 'preserve';
         }
 
         return UrlHelper::url(static::MUX_IMAGE_DOMAIN . '/' . $playbackId . "/thumbnail.$format", $params);
     }
 
-    /**
-     * @param string|null $playbackId
-     * @param array $params
-     * @return string|null
-     */
     public static function getGifUrl(?string $playbackId, array $params = []): ?string
     {
 

@@ -9,6 +9,7 @@ use craft\helpers\Html;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\Template;
+use craft\helpers\UrlHelper;
 use craft\web\View;
 use escape\escapedam\EscapeDam;
 use escape\escapedam\helpers\MuxHelper;
@@ -31,13 +32,12 @@ class EscapeDamFileBehavior extends Behavior
     private bool $_isDamImage;
 
     /** @var string|null */
-    private ?string $_muxPlaybackId;
+    private ?string $_muxPlaybackId = null;
 
     /** @var array|null */
     private ?array $_damVideoData;
 
     /**
-     * @return bool
      * @throws \yii\base\InvalidConfigException
      */
     public function isDamFile(): bool
@@ -49,7 +49,6 @@ class EscapeDamFileBehavior extends Behavior
     }
 
     /**
-     * @return bool
      * @throws \yii\base\InvalidConfigException
      */
     public function isDamImage(): bool
@@ -63,7 +62,6 @@ class EscapeDamFileBehavior extends Behavior
     }
 
     /**
-     * @return bool
      * @throws \yii\base\InvalidConfigException
      */
     public function isDamVideo(): bool
@@ -79,6 +77,21 @@ class EscapeDamFileBehavior extends Behavior
     /**
      * @return string|null
      */
+    public function getDamUrl(): ?string
+    {
+        $damUrl = EscapeDam::getInstance()->getSettings()->damUrl ?? '';
+        if (!UrlHelper::isAbsoluteUrl($damUrl)) {
+            return null;
+        }
+        /** @var Asset $asset */
+        $asset = $this->owner;
+        $damFile = EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
+        if (!$damFile || !is_array($damFile) || !isset($damFile['id'])) {
+            return null;
+        }
+        return rtrim($damUrl, '/') . '/edit/' . $damFile['id'];
+    }
+
     public function getMuxPlaybackId(): ?string
     {
         if (!isset($this->_muxPlaybackId)) {
@@ -88,17 +101,11 @@ class EscapeDamFileBehavior extends Behavior
         return $this->_muxPlaybackId;
     }
 
-    /**
-     * @return string|null
-     */
     public function getDamVideoStreamUrl(): ?string
     {
         return MuxHelper::getStreamUrl($this->getMuxPlaybackId());
     }
 
-    /**
-     * @return array|null
-     */
     public function getDamVideoData(): ?array
     {
         if (!isset($this->_damVideoData)) {
@@ -108,9 +115,6 @@ class EscapeDamFileBehavior extends Behavior
     }
 
     /**
-     * @param array $params
-     * @param bool $polyfill
-     * @return \Twig\Markup|null
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
      * @throws \Twig\Error\SyntaxError
@@ -139,27 +143,16 @@ class EscapeDamFileBehavior extends Behavior
         ], View::TEMPLATE_MODE_CP));
     }
 
-    /**
-     * @param array $params
-     * @return string|null
-     */
     public function getDamVideoImageUrl(array $params = []): ?string
     {
         return MuxHelper::getImageUrl($this->getMuxPlaybackId(), $params);
     }
 
-    /**
-     * @param array $params
-     * @return string
-     */
     public function getDamVideoGifUrl(array $params = []): string
     {
         return MuxHelper::getGifUrl($this->getMuxPlaybackId(), $params);
     }
 
-    /**
-     * @return array|null
-     */
     private function _getDamVideoData(): ?array
     {
         if (!$this->isDamVideo()) {

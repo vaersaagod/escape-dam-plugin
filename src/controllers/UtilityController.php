@@ -44,7 +44,7 @@ class UtilityController extends Controller
             ->volumeId($volume->id)
             ->ids());
 
-        if (!$assetIds) {
+        if ($assetIds === []) {
             Craft::$app->getSession()->setError("No Assets found in volume");
             return null;
         }
@@ -59,7 +59,7 @@ class UtilityController extends Controller
         $missingAssetIds = \array_values(\array_diff($assetIds, $importedFileAssetIds));
         $countMissingAssetIds = \count($missingAssetIds);
 
-        if (!$countMissingAssetIds) {
+        if ($countMissingAssetIds === 0) {
             Craft::$app->getSession()->setError("No missing imported records to fix");
             return null;
         }

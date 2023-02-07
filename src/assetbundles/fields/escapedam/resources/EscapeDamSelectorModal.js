@@ -118,7 +118,7 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
     defaults: {
         closeOtherModals: true,
         resizable: false,
-        minGutter: 30
+        minGutter: 80
     }
 });
 

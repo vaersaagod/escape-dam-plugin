@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.0 - 2023-02-07
+### Added
+- Added compatibility with Craft 4.3+  
+- Added "Plugin Name" config setting  
+- Added the `allowedVolumesForImport` config setting, to reduce the risk of files being imported to undesired volumes  
+### Changed
+- DAM fields' "Enable native assets" field setting is now enabled by default for new fields
+- DAM fields' "View Mode" field setting is now set to "Large Thumbnails" by default for new fields
+- Upgraded the `firebase/php-jwt` package to v6
+
 ## 1.6.0 - 2022-11-09
 ### Changed
 - Use MuxPlayer for video previews

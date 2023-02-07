@@ -52,11 +52,11 @@ class EscapeDamCpAsset extends AssetBundle
         }
 
         /** @var Settings $settings */
-        $settings = EscapeDam::$plugin->getSettings();
+        $settings = EscapeDam::getInstance()->getSettings();
 
         $config = [
             'damUrl' => $settings->damUrl,
-            'token' => EscapeDam::$plugin->users->getDamToken(),
+            'token' => EscapeDam::getInstance()->users->getDamToken(),
         ];
         $configJson = Json::encode($config, JSON_UNESCAPED_UNICODE);
         $js = <<<JS

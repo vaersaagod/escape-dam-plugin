@@ -25,9 +25,7 @@ class Files extends Component
 {
 
     /**
-     * @param int $fieldId
      * @param int|null $elementId
-     * @return VolumeFolder|null
      * @throws \Exception
      */
     public function getFolderForImportByFieldAndElement(int $fieldId, int $elementId = null): ?VolumeFolder
@@ -39,7 +37,7 @@ class Files extends Component
         }
         $element = $elementId ? Craft::$app->getElements()->getElementById((int)$elementId) : null;
         $folderId = $field->resolveDynamicPathToImportFolderId($element);
-        if (!$folderId) {
+        if ($folderId === 0) {
             return null;
         }
         return Craft::$app->getAssets()->findFolder(['id' => (int)$folderId]);
@@ -48,13 +46,10 @@ class Files extends Component
     /**
      * Import a file to a field as Asett
      *
-     * @param int $fileId
-     * @param int $fieldId
      * @param int|null $elementId
      * @param int|null $siteId
      * @param int|null $folderId
      * @param int|null $uploaderId
-     * @return Asset
      * @throws \Throwable
      * @throws \craft\errors\ElementNotFoundException
      * @throws \craft\errors\SiteNotFoundException
@@ -80,7 +75,7 @@ class Files extends Component
         // Has the file already been imported?
         $asset = $this->getImportedAsset($fileId, $fieldId, $elementId);
 
-        if ($asset) {
+        if ($asset !== null) {
             return $asset;
         }
 
@@ -109,7 +104,7 @@ class Files extends Component
             // Download the original image file
             $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
             FileHelper::downloadFile($fileUrl, $tempPath);
-        } else if ($kind === Asset::KIND_VIDEO) {
+        } elseif ($kind === Asset::KIND_VIDEO) {
             // Create a JSON file and save it to the temp path
             $tempPath = AssetsHelper::tempFilePath('json');
             \file_put_contents($tempPath, Json::encode($fileData));
@@ -137,7 +132,7 @@ class Files extends Component
         $asset->tempFilePath = $tempPath;
         $asset->filename = $filename;
         $asset->newFolderId = $folder->id;
-        $asset->volumeId = $folder->volumeId;
+        $asset->setVolumeId($folder->volumeId);
         $asset->avoidFilenameConflicts = true;
         $asset->uploaderId = $uploader->id;
         $asset->setScenario(Asset::SCENARIO_CREATE);
@@ -195,12 +190,6 @@ class Files extends Component
 
     }
 
-    /**
-     * @param int $damId
-     * @param int $fieldId
-     * @param int|null $elementId
-     * @return Asset|null
-     */
     public function getImportedAsset(int $damId, int $fieldId, ?int $elementId = null): ?Asset
     {
         $assetId = (int)(new Query())
@@ -214,7 +203,7 @@ class Files extends Component
             ->andWhere('elements.dateDeleted IS NULL') // Make sure we don't include soft deleted Assets
             ->scalar();
 
-        if (!$assetId) {
+        if ($assetId === 0) {
             return null;
         }
 
@@ -224,7 +213,6 @@ class Files extends Component
     /**
      * Return the original DAM file data for an imported Asset
      *
-     * @param Asset $asset
      * @return mixed|null
      */
     public function getFileForImportedAsset(Asset $asset)
@@ -232,7 +220,7 @@ class Files extends Component
         $damFileSettings = (new Query())
             ->select(['importedfiles.settings'])
             ->from('{{%escapedam_importedfiles}} AS importedfiles')
-            ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->id])
+            ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->getId()])
             ->scalar();
 
         if (!$damFileSettings || !Json::isJsonObject($damFileSettings)) {
@@ -243,8 +231,6 @@ class Files extends Component
     }
 
     /**
-     * @param Asset $asset
-     * @return bool
      * @throws \yii\base\InvalidConfigException
      */
     public function isImportedAsset(Asset $asset): bool
@@ -256,7 +242,7 @@ class Files extends Component
         }
         $result = (new Query())
             ->from('{{%escapedam_importedfiles}} AS importedfiles')
-            ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->id])
+            ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->getId()])
             ->exists();
         Craft::$app->getCache()->set($cacheKey, $result ? 'true' : 'false', ConfigHelper::durationInSeconds('P30D'));
         return $result;
@@ -264,8 +250,6 @@ class Files extends Component
 
     /**
      * @param $assetIds
-     * @param int $fieldId
-     * @param int $elementId
      * @return void
      * @throws \yii\db\Exception
      */
@@ -287,7 +271,7 @@ class Files extends Component
                 ->andWhere(['or', 'sourceElementId=:sourceElementId', 'sourceElementId IS NULL'], [':sourceElementId' => $elementId])
                 ->scalar();
 
-            if (!$id) {
+            if ($id === 0) {
                 continue;
             }
 
@@ -302,8 +286,6 @@ class Files extends Component
     }
 
     /**
-     * @param Asset $asset
-     * @return string
      * @throws \yii\base\InvalidConfigException
      */
     public function getContents(Asset $asset): string
@@ -319,7 +301,7 @@ class Files extends Component
             Craft::error($e->getMessage(), __METHOD__);
             $contents = '';
         }
-        if ($contents) {
+        if ($contents !== '' && $contents !== '0') {
             Craft::$app->getCache()->set($cacheKey, $contents, ConfigHelper::durationInSeconds('P30D'));
         }
         return $contents;
@@ -328,14 +310,13 @@ class Files extends Component
     /**
      * Grabs localized data from raw data array, using the local LANGUAGE_CODE_MAP constant to map different language codes to the same DAM language
      *
-     * @param Site $site
      * @param $localizedData
      * @return mixed|null
      */
     private function _getLocalizedDataForSite(Site $site, $localizedData)
     {
         $language = $site->language;
-        if (\in_array($language, \array_keys($localizedData))) {
+        if (array_key_exists($language, $localizedData)) {
             return $localizedData[$language];
         }
         foreach (ApiHelper::LANGUAGE_CODE_MAP as $languageCode => $languages) {
@@ -346,10 +327,6 @@ class Files extends Component
         return null;
     }
 
-    /**
-     * @param Asset $asset
-     * @param array $data
-     */
     private function _populateImportedAssetFieldValues(Asset &$asset, array $data)
     {
         /** @var Settings $settings */

@@ -6,6 +6,15 @@
     padding: 0;
 }
 
+.matrixblock .elementselect .progress-shade {
+    background-color: transparent;
+}
+
+.escapedam.elementselect .progress-shade .progressbar {
+    top: 50% !important;
+    transform: translateY(-50%);
+}
+
 .btn.add.icon.dashed.escapedam {
     position: relative !important;
 }
