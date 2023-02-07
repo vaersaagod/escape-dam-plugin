@@ -10,10 +10,6 @@
         "craft-plugin",
         "escape dam"
     ],
-    "support": {
-        "docs": "???",
-        "issues": "???"
-    },
     "license": "MIT",
     "authors": [
         {
@@ -22,8 +18,20 @@
         }
     ],
     "require": {
+        "php": "^8.1.12",
         "craftcms/cms": "^3.5.13",
         "firebase/php-jwt": "^5.0.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "platform": {
+            "php": "8.1.12"
+        },
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true,
+            "craftcms/plugin-installer": true
+        }
     },
     "autoload": {
         "psr-4": {
@@ -33,7 +41,10 @@
     "extra": {
         "name": "Escape DAM",
         "handle": "escapedam",
-        "changelogUrl": "???",
+        "changelogUrl": "",
         "class": "escape\\escapedam\\EscapeDam"
+    },
+    "require-dev": {
+        "craftcms/rector": "dev-main"
     }
 }
