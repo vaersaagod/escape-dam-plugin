@@ -132,34 +132,16 @@ class EscapeDam extends Plugin
             }
         );
 
-        Event::on(
-            Plugins::class,
-            Plugins::EVENT_AFTER_LOAD_PLUGINS,
-            function () {
-
-                // Register Asset bundles
-                $request = Craft::$app->getRequest();
+        // Register CP asset bundle
+        if (\Craft::$app->getRequest()->getIsCpRequest() && !\Craft::$app->getRequest()->getIsLoginRequest()) {
+            \Craft::$app->onInit(static function() {
                 $user = Craft::$app->getUser()->getIdentity();
-                if (!$request->getIsCpRequest() || $request->getIsConsoleRequest() || !$user || !$user->can('accessCp')) {
+                if (!$user || !$user->can('accessCp')) {
                     return;
                 }
-
-                Event::on(
-                    View::class,
-                    View::EVENT_BEFORE_RENDER_TEMPLATE,
-                    function (TemplateEvent $event) {
-                        try {
-                            Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
-                        } catch (InvalidConfigException $e) {
-                            Craft::error(
-                                'Error registering AssetBundle - ' . $e->getMessage(),
-                                __METHOD__
-                            );
-                        }
-                    }
-                );
-            }
-        );
+                \Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
+            });
+        }
 
         Event::on(
             Elements::class,
