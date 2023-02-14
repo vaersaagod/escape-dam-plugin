@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+### Fixed
+- Cleaned up some exception handing in the DAM fieldtype
+
 ## 2.0.3 - 2023-02-11
 ### Fixed
 - Fixes a "Element query executed before Craft is fully initialized" warning   
