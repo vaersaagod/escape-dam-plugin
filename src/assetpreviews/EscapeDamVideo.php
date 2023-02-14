@@ -3,15 +3,19 @@
 namespace escape\escapedam\assetpreviews;
 
 use craft\assetpreviews\Text;
-use craft\base\AssetPreviewHandler;
-use craft\helpers\Html;
-use craft\helpers\UrlHelper;
 use craft\web\View;
 
 class EscapeDamVideo extends Text
 {
+
     /**
-     * @inheritdoc
+     * @param array $variables
+     * @return string
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
+     * @throws \yii\base\Exception
+     * @throws \yii\base\NotSupportedException
      */
     public function getPreviewHtml(array $variables = []): string
     {

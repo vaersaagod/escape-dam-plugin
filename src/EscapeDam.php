@@ -15,7 +15,9 @@ use craft\base\Element;
 use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\AssetPreviewEvent;
+use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineBehaviorsEvent;
+use craft\events\DefineElementInnerHtmlEvent;
 use craft\events\DefineHtmlEvent;
 use craft\events\ElementEvent;
 use craft\events\GetAssetThumbUrlEvent;
@@ -23,6 +25,7 @@ use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\SetElementTableAttributeHtmlEvent;
+use craft\helpers\Cp;
 use craft\helpers\ElementHelper;
 use craft\helpers\Html;
 use craft\helpers\Json;
@@ -164,11 +167,11 @@ class EscapeDam extends Plugin
             }
         );
 
-        Event::on(Asset::class, Element::EVENT_REGISTER_TABLE_ATTRIBUTES, function (RegisterElementTableAttributesEvent $event) {
+        Event::on(Asset::class, Element::EVENT_REGISTER_TABLE_ATTRIBUTES, static function (RegisterElementTableAttributesEvent $event) {
             $event->tableAttributes['_escapedam_url'] = Craft::t('site', 'DAM Link');
         });
 
-        Event::on(Asset::class, Element::EVENT_SET_TABLE_ATTRIBUTE_HTML, function (SetElementTableAttributeHtmlEvent $event) {
+        Event::on(Asset::class, Element::EVENT_SET_TABLE_ATTRIBUTE_HTML, static function (SetElementTableAttributeHtmlEvent $event) {
             $attribute = $event->attribute;
             if ($attribute === '_escapedam_url' && $event->sender instanceof Asset && $damUrl = $event->sender->getDamUrl()) {
                 $event->html = Html::a('Open in DAM', $damUrl, [
@@ -184,7 +187,7 @@ class EscapeDam extends Plugin
         Event::on(
             Assets::class,
             Assets::EVENT_DEFINE_THUMB_URL,
-            function (\craft\events\DefineAssetThumbUrlEvent $event) {
+            function (DefineAssetThumbUrlEvent $event) {
                 $asset = $event->asset;
                 if ($asset->kind !== Asset::KIND_JSON || !$this->files->isImportedAsset($asset)) {
                     return;
@@ -196,6 +199,35 @@ class EscapeDam extends Plugin
                 }
                 $thumbSize = max($event->width, $event->height);
                 $event->url = MuxHelper::getImageUrl($muxPlaybackId, ['width' => $thumbSize, 'height' => $thumbSize, 'fit_mode' => 'preserve']);
+            }
+        );
+
+        Event::on(
+            Cp::class,
+            Cp::EVENT_DEFINE_ELEMENT_INNER_HTML,
+            static function (DefineElementInnerHtmlEvent $event) {
+                $element = $event->element;
+                if (!$element instanceof Asset || !$element->isDamVideo() || $event->size !== 'large') {
+                    return;
+                }
+                $event->innerHtml = str_replace('class="elementthumb', 'class="elementthumb damvideo', $event->innerHtml);
+                $css = <<< CSS
+                    .elementthumb.damvideo::before {
+                        content: "VIDEO";
+                        display: block;
+                        position: absolute;
+                        background-color: black;
+                        color: white;
+                        left: 50%;
+                        top: 50%;
+                        transform: translate(-50%, -50%);
+                        pointer-events: none;
+                        font-size: 11px;
+                        border-radius: 3px;
+                        padding: 0 4px;
+                    }
+                CSS;
+                \Craft::$app->getView()->registerCss($css);
             }
         );
 
