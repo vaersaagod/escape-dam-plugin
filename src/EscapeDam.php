@@ -23,19 +23,15 @@ use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\SetElementTableAttributeHtmlEvent;
-use craft\events\TemplateEvent;
 use craft\helpers\ElementHelper;
 use craft\helpers\Html;
 use craft\helpers\Json;
-use craft\helpers\UrlHelper;
 use craft\services\Assets;
 use craft\services\Elements;
 use craft\services\Fields;
-use craft\services\Plugins;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
-use craft\web\View;
 
 use escape\escapedam\assetbundles\cp\EscapeDamCpAsset;
 use escape\escapedam\assetpreviews\EscapeDamVideo;
@@ -51,7 +47,6 @@ use escape\escapedam\utilities\EscapeDam as EscapeDamUtility;
 use escape\escapedam\web\twig\variables\EscapeDamVariable;
 
 use yii\base\Event;
-use yii\base\InvalidConfigException;
 
 /**
  * Class EscapeDam
@@ -66,31 +61,12 @@ use yii\base\InvalidConfigException;
  */
 class EscapeDam extends Plugin
 {
-    // Static Properties
-    // =========================================================================
 
-    /**
-     * @var EscapeDam
-     */
-    public static $plugin;
-
-    // Public Properties
-    // =========================================================================
-
-    /**
-     * @var string
-     */
+    /** @var string */
     public string $schemaVersion = '1.2.0';
 
-    /**
-     * @var bool
-     */
+    /** @var bool */
     public bool $hasCpSection = true;
-
-    /**
-     * @var bool
-     */
-    public bool $hasCpSettings = false;
 
     /** @var Settings|null */
     private ?Settings $_settings = null;
@@ -98,9 +74,7 @@ class EscapeDam extends Plugin
     // Public Methods
     // =========================================================================
 
-    /**
-     * @inheritdoc
-     */
+    /** @inheritdoc */
     public function init()
     {
 
@@ -117,7 +91,7 @@ class EscapeDam extends Plugin
         Event::on(
             Fields::class,
             Fields::EVENT_REGISTER_FIELD_TYPES,
-            function (RegisterComponentTypesEvent $event) {
+            static function (RegisterComponentTypesEvent $event) {
                 $event->types[] = EscapeDamField::class;
             }
         );
@@ -126,7 +100,7 @@ class EscapeDam extends Plugin
         Event::on(
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
-            function (Event $event) {
+            static function (Event $event) {
                 $variable = $event->sender;
                 $variable->set('escapedam', EscapeDamVariable::class);
             }
@@ -135,18 +109,22 @@ class EscapeDam extends Plugin
         // Register CP asset bundle
         if (\Craft::$app->getRequest()->getIsCpRequest() && !\Craft::$app->getRequest()->getIsLoginRequest()) {
             \Craft::$app->onInit(static function() {
-                $user = Craft::$app->getUser()->getIdentity();
-                if (!$user || !$user->can('accessCp')) {
-                    return;
+                try {
+                    $user = Craft::$app->getUser()->getIdentity();
+                    if (!$user || !$user->can('accessCp')) {
+                        return;
+                    }
+                    \Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
+                } catch (\Throwable $e) {
+                    \Craft::error($e, __METHOD__);
                 }
-                \Craft::$app->getView()->registerAssetBundle(EscapeDamCpAsset::class);
             });
         }
 
         Event::on(
             Elements::class,
             Elements::EVENT_AFTER_SAVE_ELEMENT,
-            function (ElementEvent $event) {
+            static function (ElementEvent $event) {
                 /** @var Element $element */
                 $element = $event->element;
                 // Get any DAM fields associated with this element, and make sure imported Asset records for this element is updated with the element's ID

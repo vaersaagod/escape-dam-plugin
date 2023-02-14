@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## 2.0.3 - 2023-02-11
 ### Fixed
-- Fixes a "Element query executed before Craft is fully initialized" warning   
+- Fixes an "Element query executed before Craft is fully initialized" warning   
 
 ## 2.0.2 - 2023-02-07
 ### Fixed
