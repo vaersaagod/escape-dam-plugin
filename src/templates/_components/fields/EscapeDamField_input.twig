@@ -49,14 +49,19 @@
     modalStorageKey: storageKey,
     fieldId: fieldId,
     defaultFieldLayoutId: defaultFieldLayoutId,
-    modalSettings: {hideSidebar: hideSidebar},
-    assetsEnabled: enableAssetsInput ? true : false,
+        assetsEnabled: enableAssetsInput ? true : false,
     prevalidate: prevalidate ?? false,
     canUpload: false,
     allowedExtensions,
     modalSettings: {
-        hideSidebar: hideSidebar,
-        defaultSource: defaultUploadLocation
+        hideSidebar: hideSidebar ?? false,
+        defaultSource: defaultSource ?? null,
+        defaultSourcePath: defaultSourcePath ?? null,
+        showSourcePath: showSourcePath ?? true,
+        indexSettings: {
+            showFolders: showFolders ?? true,
+        },
+        modalTitle: selectionLabel,
     },
     describedBy: (describedBy ?? false) ? describedBy|split(' ')|map(id => id|namespaceInputId)|join(' ') : null
 } %}

@@ -12,6 +12,7 @@ namespace escape\escapedam;
 
 use Craft;
 use craft\base\Element;
+use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\AssetPreviewEvent;
@@ -78,7 +79,7 @@ class EscapeDam extends Plugin
     // =========================================================================
 
     /** @inheritdoc */
-    public function init()
+    public function init(): void
     {
 
         parent::init();
@@ -207,7 +208,7 @@ class EscapeDam extends Plugin
             Cp::EVENT_DEFINE_ELEMENT_INNER_HTML,
             static function (DefineElementInnerHtmlEvent $event) {
                 $element = $event->element;
-                if (!$element instanceof Asset || !$element->isDamVideo() || $event->size !== 'large') {
+                if (!$element instanceof Asset || $element->isFolder || !$element->isDamVideo() || $event->size !== 'large') {
                     return;
                 }
                 $event->innerHtml = str_replace('class="elementthumb', 'class="elementthumb damvideo', $event->innerHtml);
@@ -247,7 +248,7 @@ class EscapeDam extends Plugin
         // Add special sexy Asset behavior for DAM videos (Mux)
         Event::on(
             Asset::class,
-            Asset::EVENT_DEFINE_BEHAVIORS,
+            Model::EVENT_DEFINE_BEHAVIORS,
             static function (DefineBehaviorsEvent $event) {
                 $event->behaviors['escapeDamFileBehavior'] = ['class' => EscapeDamFileBehavior::class];
             }
@@ -280,6 +281,9 @@ class EscapeDam extends Plugin
         );
     }
 
+    /**
+     * @return array|null
+     */
     public function getCpNavItem(): ?array
     {
         $navItem = parent::getCpNavItem();
@@ -291,6 +295,9 @@ class EscapeDam extends Plugin
         return $navItem;
     }
 
+    /**
+     * @return Settings
+     */
     public function getSettings(): Settings
     {
         if ($this->_settings === null) {
@@ -299,6 +306,9 @@ class EscapeDam extends Plugin
         return $this->_settings;
     }
 
+    /**
+     * @return Settings
+     */
     protected function createSettingsModel(): Settings
     {
         return new Settings();

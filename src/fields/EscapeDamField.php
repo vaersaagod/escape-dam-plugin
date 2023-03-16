@@ -13,8 +13,7 @@ use craft\fields\Assets;
 use craft\helpers\Assets as AssetsHelper;
 use craft\helpers\FileHelper;
 
-use http\Exception\RuntimeException;
-
+use \RuntimeException;
 use yii\base\InvalidConfigException;
 
 class EscapeDamField extends Assets
@@ -189,7 +188,7 @@ class EscapeDamField extends Assets
                 throw new RuntimeException(Craft::t('app', 'The {field} field’s {setting} setting has an invalid subpath (“{subpath}”).', [
                     'field' => $this->name,
                     'setting' => $settingName,
-                    'subpath' => $e->subpath,
+                    'subpath' => $subpath,
                 ]), 0, $e);
             }
         }

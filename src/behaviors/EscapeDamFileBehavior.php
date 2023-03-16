@@ -5,9 +5,7 @@ namespace escape\escapedam\behaviors;
 use Craft;
 
 use craft\elements\Asset;
-use craft\helpers\Html;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 use craft\web\View;
@@ -42,8 +40,13 @@ class EscapeDamFileBehavior extends Behavior
      */
     public function isDamFile(): bool
     {
+        /** @var Asset $asset */
+        $asset = $this->owner;
+        if ($asset->isFolder) {
+            return false;
+        }
         if (!isset($this->_isDamFile)) {
-            $this->_isDamFile = EscapeDam::getInstance()->files->isImportedAsset($this->owner);
+            $this->_isDamFile = EscapeDam::getInstance()->files->isImportedAsset($asset);
         }
         return $this->_isDamFile;
     }
@@ -92,6 +95,10 @@ class EscapeDamFileBehavior extends Behavior
         return rtrim($damUrl, '/') . '/edit/' . $damFile['id'];
     }
 
+    /**
+     * @return string|null
+     * @throws \yii\base\InvalidConfigException
+     */
     public function getMuxPlaybackId(): ?string
     {
         if (!isset($this->_muxPlaybackId)) {
@@ -101,11 +108,19 @@ class EscapeDamFileBehavior extends Behavior
         return $this->_muxPlaybackId;
     }
 
+    /**
+     * @return string|null
+     * @throws \yii\base\InvalidConfigException
+     */
     public function getDamVideoStreamUrl(): ?string
     {
         return MuxHelper::getStreamUrl($this->getMuxPlaybackId());
     }
 
+    /**
+     * @return array|null
+     * @throws \yii\base\InvalidConfigException
+     */
     public function getDamVideoData(): ?array
     {
         if (!isset($this->_damVideoData)) {
@@ -143,16 +158,30 @@ class EscapeDamFileBehavior extends Behavior
         ], View::TEMPLATE_MODE_CP));
     }
 
+    /**
+     * @param array $params
+     * @return string|null
+     * @throws \yii\base\InvalidConfigException
+     */
     public function getDamVideoImageUrl(array $params = []): ?string
     {
         return MuxHelper::getImageUrl($this->getMuxPlaybackId(), $params);
     }
 
+    /**
+     * @param array $params
+     * @return string
+     * @throws \yii\base\InvalidConfigException
+     */
     public function getDamVideoGifUrl(array $params = []): string
     {
         return MuxHelper::getGifUrl($this->getMuxPlaybackId(), $params);
     }
 
+    /**
+     * @return array|null
+     * @throws \yii\base\InvalidConfigException
+     */
     private function _getDamVideoData(): ?array
     {
         if (!$this->isDamVideo()) {

@@ -213,10 +213,14 @@ class Files extends Component
     /**
      * Return the original DAM file data for an imported Asset
      *
+     * @param Asset $asset
      * @return mixed|null
      */
-    public function getFileForImportedAsset(Asset $asset)
+    public function getFileForImportedAsset(Asset $asset): mixed
     {
+        if (!$asset->isFolder) {
+            return null;
+        }
         $damFileSettings = (new Query())
             ->select(['importedfiles.settings'])
             ->from('{{%escapedam_importedfiles}} AS importedfiles')
@@ -235,7 +239,10 @@ class Files extends Component
      */
     public function isImportedAsset(Asset $asset): bool
     {
-        $cacheKey = 'escapedam-is-imported-asset:' . $asset->uid . $asset->dateUpdated->getTimestamp();
+        if ($asset->isFolder) {
+            return false;
+        }
+        $cacheKey = 'escapedam-is-imported-asset:' . $asset->uid . ($asset->dateUpdated?->getTimestamp() ?? $asset->dateCreated?->getTimestamp() ?? '');
         $cachedResult = Craft::$app->getCache()->get($cacheKey);
         if ($cachedResult === 'true') {
             return true;
@@ -250,10 +257,12 @@ class Files extends Component
 
     /**
      * @param $assetIds
+     * @param int $fieldId
+     * @param int $elementId
      * @return void
      * @throws \yii\db\Exception
      */
-    public function relateImportedAssetToElement($assetIds, int $fieldId, int $elementId)
+    public function relateImportedAssetToElement($assetIds, int $fieldId, int $elementId): void
     {
 
         if (!\is_array($assetIds)) {
@@ -286,10 +295,15 @@ class Files extends Component
     }
 
     /**
+     * @param Asset $asset
+     * @return string
      * @throws \yii\base\InvalidConfigException
      */
     public function getContents(Asset $asset): string
     {
+        if ($asset->isFolder) {
+            return '';
+        }
         $cacheKey = 'escapedam-' . $asset->uid . '-contents';
         $cachedContents = Craft::$app->getCache()->get($cacheKey);
         if ($cachedContents) {
@@ -310,10 +324,11 @@ class Files extends Component
     /**
      * Grabs localized data from raw data array, using the local LANGUAGE_CODE_MAP constant to map different language codes to the same DAM language
      *
+     * @param Site $site
      * @param $localizedData
-     * @return mixed|null
+     * @return mixed
      */
-    private function _getLocalizedDataForSite(Site $site, $localizedData)
+    private function _getLocalizedDataForSite(Site $site, $localizedData): mixed
     {
         $language = $site->language;
         if (array_key_exists($language, $localizedData)) {
@@ -327,12 +342,19 @@ class Files extends Component
         return null;
     }
 
-    private function _populateImportedAssetFieldValues(Asset &$asset, array $data)
+    /**
+     * @param Asset $asset
+     * @param array $data
+     * @return void
+     */
+    private function _populateImportedAssetFieldValues(Asset &$asset, array $data): void
     {
-        /** @var Settings $settings */
+        if ($asset->isFolder) {
+            return;
+        }
         $settings = EscapeDam::getInstance()->getSettings();
         $metaDataFieldMap = $settings->metaDataFieldMap ?: null;
-        if (!$metaDataFieldMap || !\is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
+        if (!\is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
             return;
         }
         $fieldValues = [];
