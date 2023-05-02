@@ -25,17 +25,17 @@ class EscapeDamField extends Assets
      * @var string|null Where files should be restricted to, in format
      * "folder:X", where X is the craft\models\VolumeFolder ID
      */
-    public ?string $damImportLocationSource;
+    public ?string $damImportLocationSource = null;
 
     /**
      * @var string|null The subpath that files should be restricted to
      */
-    public ?string $damImportLocationSubpath;
+    public ?string $damImportLocationSubpath = null;
 
     /**
      * @var string|null The label for the DAM selection input button
      */
-    public ?string $damSelectionLabel;
+    public ?string $damSelectionLabel = null;
 
     /**
      * @var bool If selecting and uploading via standard Assets should be allowed

@@ -2,7 +2,7 @@
     "name": "escape/escapedam",
     "description": "Escape DAM integration",
     "type": "craft-plugin",
-    "version": "1.7.0",
+    "version": "1.7.1",
     "keywords": [
         "craft",
         "cms",
