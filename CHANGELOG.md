@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.7.0 - 2023-05-02
+### Fixed 
+- Fixed Craft 3.8 compatibility issues  
+### Changed 
+- Escape DAM plugin now requires Craft 3.8.8 or later  
+
 ## 1.6.0 - 2022-11-09
 ### Changed
 - Use MuxPlayer for video previews

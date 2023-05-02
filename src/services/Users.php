@@ -19,7 +19,9 @@ use \Firebase\JWT\JWT;
 class Users extends Component
 {
     /**
+     * @param int|null $userId
      * @return string
+     * @throws \Throwable
      * @throws \craft\errors\SiteNotFoundException
      */
     public function getDamToken(int $userId = null): string
@@ -35,7 +37,6 @@ class Users extends Component
                 throw new \Exception('User is not logged in');
             }
         }
-        /** @var Settings $settings */
         $settings = EscapeDam::$plugin->getSettings();
         $jwtSecret = $settings->jwtSecret;
         $now = DateTimeHelper::currentTimeStamp();

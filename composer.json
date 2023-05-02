@@ -2,7 +2,7 @@
     "name": "escape/escapedam",
     "description": "Escape DAM integration",
     "type": "craft-plugin",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "keywords": [
         "craft",
         "cms",
@@ -22,7 +22,7 @@
         }
     ],
     "require": {
-        "craftcms/cms": "^3.5.13",
+        "craftcms/cms": "^3.8.8",
         "firebase/php-jwt": "^5.0.0"
     },
     "autoload": {

@@ -5,14 +5,15 @@ namespace escape\escapedam\fields;
 use Craft;
 use craft\base\Element;
 use craft\base\ElementInterface;
-use craft\base\Volume;
 use craft\elements\Asset;
+use craft\elements\Entry;
 use craft\errors\InvalidSubpathException;
+use craft\errors\InvalidVolumeException;
+use craft\errors\VolumeException;
 use craft\fields\Assets;
 use craft\helpers\Assets as AssetsHelper;
-use craft\helpers\FileHelper;
 
-use yii\base\InvalidConfigException;
+use craft\models\VolumeFolder;
 
 class EscapeDamField extends Assets
 {
@@ -24,22 +25,22 @@ class EscapeDamField extends Assets
      * @var string|null Where files should be restricted to, in format
      * "folder:X", where X is the craft\models\VolumeFolder ID
      */
-    public $damImportLocationSource;
+    public ?string $damImportLocationSource;
 
     /**
      * @var string|null The subpath that files should be restricted to
      */
-    public $damImportLocationSubpath;
+    public ?string $damImportLocationSubpath;
 
     /**
      * @var string|null The label for the DAM selection input button
      */
-    public $damSelectionLabel;
+    public ?string $damSelectionLabel;
 
     /**
      * @var bool If selecting and uploading via standard Assets should be allowed
      */
-    public $enableAssetsInput = false;
+    public bool $enableAssetsInput = false;
 
     // Static
     // =========================================================================
@@ -100,15 +101,16 @@ class EscapeDamField extends Assets
     }
 
     /**
-     * Resolve source path for DAM importing for this field.
-     *
      * @param ElementInterface|null $element
      * @return int
      * @throws InvalidSubpathException
+     * @throws InvalidVolumeException
+     * @throws VolumeException
+     * @throws \ReflectionException
      */
-    public function resolveDynamicPathToImportFolderId(ElementInterface $element = null): int
+    public function getImportFolderId(ElementInterface $element = null): int
     {
-        return $this->_determineImportFolderId($element, true);
+        return $this->_importFolder($element)->id;
     }
 
     /**
@@ -134,160 +136,93 @@ class EscapeDamField extends Assets
     }
 
     /**
-     * Convert a folder:UID source key to a volume:UID source key.
-     *
-     * @param mixed $sourceKey
-     * @return string
-     */
-    private function _folderSourceToVolumeSource($sourceKey): string
-    {
-        if ($sourceKey && is_string($sourceKey) && strpos($sourceKey, 'folder:') === 0) {
-            $parts = explode(':', $sourceKey);
-            $folder = Craft::$app->getAssets()->getFolderByUid($parts[1]);
-
-            if ($folder) {
-                try {
-                    /** @var Volume $volume */
-                    $volume = $folder->getVolume();
-                    return 'volume:' . $volume->uid;
-                } catch (InvalidConfigException $e) {
-                    // The volume is probably soft-deleted. Just pretend the folder didn't exist.
-                }
-            }
-        }
-
-        return (string)$sourceKey;
-    }
-
-    /**
-     * Convert a volume:UID source key to a folder:UID source key.
-     *
-     * @param mixed $sourceKey
-     * @return string
-     */
-    private function _volumeSourceToFolderSource($sourceKey): string
-    {
-        if ($sourceKey && is_string($sourceKey) && strpos($sourceKey, 'volume:') === 0) {
-            $parts = explode(':', $sourceKey);
-            /** @var Volume|null $volume */
-            $volume = Craft::$app->getVolumes()->getVolumeByUid($parts[1]);
-            if ($volume && $folder = Craft::$app->getAssets()->getRootFolderByVolumeId($volume->id)) {
-                return 'folder:' . $folder->uid;
-            }
-        }
-        return (string)$sourceKey;
-    }
-
-    /**
      * Determine an upload folder id by looking at the settings and whether Element this field belongs to is new or not.
      *
      * @param ElementInterface|null $element
-     * @param bool $createDynamicFolders whether missing folders should be created in the process
-     * @return int
-     * @throws InvalidSubpathException if the folder subpath is not valid
-     * @throws InvalidVolumeException if there's a problem with the field's volume configuration
+     * @return VolumeFolder
+     * @throws InvalidSubpathException
+     * @throws InvalidVolumeException
+     * @throws VolumeException
      */
-    private function _determineImportFolderId(ElementInterface $element = null, bool $createDynamicFolders = true): int
+    private function _importFolder(ElementInterface $element = null): VolumeFolder
     {
         /** @var Element $element */
-        $importVolume = $this->damImportLocationSource;
+        $sourceKey = $this->damImportLocationSource;
         $subpath = $this->damImportLocationSubpath;
-        if (!$subpath || !\strlen($subpath)) {
-            $subpath = \strtolower($this->handle) . '-' . $this->id . '/' . date('Ymdhis');
+        if (!$subpath || !strlen($subpath)) {
+            $subpath = strtolower($this->handle) . '-' . $this->id . '/' . date('Ymdhis');
         }
         $settingName = Craft::t('escapedam', 'Import Location');
         $assets = Craft::$app->getAssets();
         try {
-            if (!$importVolume) {
+            if (!$sourceKey || !$folder = $this->_findFolder($sourceKey, $subpath, $element, true)) {
                 throw new InvalidVolumeException();
             }
-            $folderId = $this->_resolveVolumePathToFolderId($importVolume, $subpath, $element, $createDynamicFolders);
         } catch (InvalidVolumeException $e) {
             throw new InvalidVolumeException(Craft::t('app', 'The {field} field’s {setting} setting is set to an invalid volume.', [
                 'field' => $this->name,
                 'setting' => $settingName,
             ]), 0, $e);
-        } catch (InvalidSubpathException $e) {
+        } catch (\InvalidSubpathException $e) {
             // If this is a new/disabled element, the subpath probably just contained a token that returned null, like {id}
             // so use the user's upload folder instead
-            if ($element === null || !$element->id || !$element->enabled || !$createDynamicFolders) {
-                $userFolder = $assets->getUserTemporaryUploadFolder();
-                $folderId = $userFolder->id;
+            if ($element === null || !$element->id || !$element->enabled) {
+                $folder = $assets->getUserTemporaryUploadFolder();
             } else {
                 // Existing element, so this is just a bad subpath
                 throw new InvalidSubpathException($e->subpath, Craft::t('app', 'The {field} field’s {setting} setting has an invalid subpath (“{subpath}”).', [
                     'field' => $this->name,
                     'setting' => $settingName,
-                    'subpath' => $e->subpath,
+                    'subpath' => $e->subpath ?? '',
                 ]), 0, $e);
             }
         }
-        return $folderId;
+        return $folder;
     }
 
     /**
-     * Resolve a source path to it's folder ID by the source path and the matched source beginning.
+     * Convert a folder:UID source key to a volume:UID source key.
      *
-     * @param string $uploadSource
+     * @param $sourceKey
+     * @return string
+     * @throws \ReflectionException
+     */
+    private function _folderSourceToVolumeSource($sourceKey): string
+    {
+        $method = new \ReflectionMethod(parent::class, '_folderSourceToVolumeSource');
+        $method->setAccessible(true);
+        return $method->invokeArgs($this, [$sourceKey]);
+    }
+
+    /**
+     * Convert a volume:UID source key to a folder:UID source key.
+     *
+     * @param $sourceKey
+     * @return string
+     * @throws \ReflectionException
+     */
+    private function _volumeSourceToFolderSource($sourceKey): string
+    {
+        $method = new \ReflectionMethod(parent::class, '_volumeSourceToFolderSource');
+        $method->setAccessible(true);
+        return $method->invokeArgs($this, [$sourceKey]);
+    }
+
+    /**
+     * Finds a volume folder by a source key and dynamic subpath
+     *
+     * @param string $sourceKey
      * @param string $subpath
      * @param ElementInterface|null $element
-     * @param bool $createDynamicFolders whether missing folders should be created in the process
-     * @return int
-     * @throws InvalidSubpathException if the subpath cannot be parsed in full
-     * @throws InvalidVolumeException if the volume root folder doesn’t exist
+     * @param bool $createDynamicFolders
+     * @return VolumeFolder
+     * @throws \ReflectionException
      */
-    private function _resolveVolumePathToFolderId(string $uploadSource, string $subpath, ElementInterface $element = null, bool $createDynamicFolders = true): int
+    private function _findFolder(string $sourceKey, string $subpath, ElementInterface $element = null, bool $createDynamicFolders = true): VolumeFolder
     {
-        $assetsService = Craft::$app->getAssets();
-        $volumeId = $this->_volumeIdBySourceKey($uploadSource);
-        // Make sure the volume and root folder actually exists
-        if ($volumeId === null || ($rootFolder = $assetsService->getRootFolderByVolumeId($volumeId)) === null) {
-            throw new InvalidVolumeException();
-        }
-        // Are we looking for a subfolder?
-        $subpath = is_string($subpath) ? trim($subpath, '/') : '';
-        if ($subpath === '') {
-            // Get the root folder in the source
-            $folderId = $rootFolder->id;
-        } else {
-            // Prepare the path by parsing tokens and normalizing slashes.
-            try {
-                $renderedSubpath = Craft::$app->getView()->renderObjectTemplate($subpath, $element);
-            } catch (\Throwable $e) {
-                throw new InvalidSubpathException($subpath, null, 0, $e);
-            }
-            // Did any of the tokens return null?
-            if (
-                $renderedSubpath === '' ||
-                trim($renderedSubpath, '/') != $renderedSubpath ||
-                strpos($renderedSubpath, '//') !== false
-            ) {
-                throw new InvalidSubpathException($subpath);
-            }
-            // Sanitize the subpath
-            $segments = explode('/', $renderedSubpath);
-            foreach ($segments as &$segment) {
-                $segment = FileHelper::sanitizeFilename($segment, [
-                    'asciiOnly' => Craft::$app->getConfig()->getGeneral()->convertFilenamesToAscii
-                ]);
-            }
-            unset($segment);
-            $subpath = implode('/', $segments);
-            $folder = $assetsService->findFolder([
-                'volumeId' => $volumeId,
-                'path' => $subpath . '/'
-            ]);
-            // Ensure that the folder exists
-            if (!$folder) {
-                if (!$createDynamicFolders) {
-                    throw new InvalidSubpathException($subpath);
-                }
-                $volume = Craft::$app->getVolumes()->getVolumeById($volumeId);
-                $folderId = $assetsService->ensureFolderByFullPathAndVolume($subpath, $volume);
-            } else {
-                $folderId = $folder->id;
-            }
-        }
-        return $folderId;
+        $method = new \ReflectionMethod(parent::class, '_findFolder');
+        $method->setAccessible(true);
+        return $method->invokeArgs($this, [$sourceKey, $subpath, $element, $createDynamicFolders]);
     }
+
 }

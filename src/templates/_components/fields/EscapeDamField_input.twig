@@ -56,7 +56,9 @@
     modalStorageKey: storageKey,
     fieldId: fieldId,
     defaultFieldLayoutId: defaultFieldLayoutId,
-    modalSettings: {hideSidebar: hideSidebar},
+    modalSettings: {
+        hideSidebar: hideSidebar ?? false
+    },
     assetsEnabled: enableAssetsInput ? true : false,
     canUpload: false,
     allowedExtensions

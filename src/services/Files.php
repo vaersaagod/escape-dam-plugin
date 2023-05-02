@@ -4,7 +4,6 @@ namespace escape\escapedam\services;
 
 use Craft;
 use craft\base\Component;
-use craft\base\LocalVolumeInterface;
 use craft\db\Query;
 use craft\elements\Asset;
 use craft\helpers\Assets as AssetsHelper;
@@ -38,7 +37,7 @@ class Files extends Component
             throw new \Exception('The field provided is not an Escape DAM field');
         }
         $element = $elementId ? Craft::$app->getElements()->getElementById((int)$elementId) : null;
-        $folderId = $field->resolveDynamicPathToImportFolderId($element);
+        $folderId = $field->getImportFolderId($element);
         if (!$folderId) {
             return null;
         }
@@ -352,10 +351,9 @@ class Files extends Component
      */
     private function _populateImportedAssetFieldValues(Asset &$asset, array $data)
     {
-        /** @var Settings $settings */
         $settings = EscapeDam::getInstance()->getSettings();
         $metaDataFieldMap = $settings->metaDataFieldMap ?: null;
-        if (!$metaDataFieldMap || !\is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
+        if (!\is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
             return;
         }
         $fieldValues = [];
