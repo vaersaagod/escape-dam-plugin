@@ -18,7 +18,11 @@ use \Firebase\JWT\JWT;
  */
 class Users extends Component
 {
+
     /**
+     * @param int|null $userId
+     * @return string
+     * @throws \Throwable
      * @throws \craft\errors\SiteNotFoundException
      */
     public function getDamToken(int $userId = null): string
@@ -37,6 +41,9 @@ class Users extends Component
         /** @var Settings $settings */
         $settings = EscapeDam::getInstance()->getSettings();
         $jwtSecret = $settings->jwtSecret;
+        if (!$jwtSecret) {
+            throw new \Exception("JWT secret missing");
+        }
         $now = DateTimeHelper::currentTimeStamp();
         $payload = [
             'iat' => $now,
