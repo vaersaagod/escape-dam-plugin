@@ -21,7 +21,6 @@ use yii\base\InvalidConfigException;
 class EscapeDamField extends Assets
 {
 
-
     /** @inheritdoc */
     public bool $allowUploads = false;
 
@@ -144,10 +143,7 @@ class EscapeDamField extends Assets
     {
         /** @var Element $element */
         $sourceKey = $this->damImportLocationSource;
-        $subpath = $this->damImportLocationSubpath;
-        if (!$subpath || !strlen($subpath)) {
-            $subpath = strtolower($this->handle) . '-' . $this->id . '/' . date('Ymdhis');
-        }
+        $subpath = implode('/', array_filter([$this->damImportLocationSubpath ?? '', strtolower($this->handle) . '-' . $this->id, date('Ymdhis')]));
         $settingName = Craft::t('escapedam', 'Import Location');
         $assets = Craft::$app->getAssets();
         try {

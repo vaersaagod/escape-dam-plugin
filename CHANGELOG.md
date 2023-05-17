@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - Adds Craft 4.4 compatibility
 ### Changed 
 - Escape DAM now requires Craft 4.4 or later
-- It's no longer possible to select volumes in the `allowedVolumesForImport` settings as "Native Assets" sources   
+- It's no longer possible to select volumes in the `allowedVolumesForImport` settings as "Native Assets" sources
+- Field subpaths now get the field handle+ID and a datestamp... subpath. A sub path for the sub path yes
 
 ## 2.1.0
 ### Added
