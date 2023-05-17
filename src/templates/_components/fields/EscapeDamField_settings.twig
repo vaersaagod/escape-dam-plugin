@@ -125,6 +125,18 @@
 
     <div id="escape-dam-assets-input-settings" class="indent{{ not field.enableAssetsInput ? ' hidden' }}">
 
+        {% if craft.escapedam.settings.allowedVolumesForImport|default(null) %}
+            {% set allSourceOptions = sourceOptions %}
+            {% set sourceOptions = [] %}
+            {% for sourceOption in allSourceOptions %}
+                {% set volumeUid = sourceOption.value|default|split(':')|last %}
+                {% set volume = craft.app.volumes.volumeByUid(volumeUid) %}
+                {% if volume and volume.handle not in craft.escapedam.settings.allowedVolumesForImport %}
+                    {% set sourceOptions = sourceOptions|push(sourceOption) %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
         {{ forms.checkboxField({
             label: 'Restrict assets to a single location'|t('app'),
             name: 'restrictLocation',
