@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 2.2.0
+## 2.2.0 - 2023-05-17
 ### Added 
 - Adds Craft 4.4 compatibility
 ### Changed 
@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 - It's no longer possible to select volumes in the `allowedVolumesForImport` settings as "Native Assets" sources
 - Field subpaths now get the field handle+ID and a datestamp... subpath. A sub path for the sub path yes
 
-## 2.1.0
+## 2.1.0 - 2023-02-14
 ### Added
 - Adds a "VIDEO" tag to DAM video thumbnails
 ### Fixed
