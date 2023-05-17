@@ -36,7 +36,7 @@ class Files extends Component
             throw new \Exception('The field provided is not an Escape DAM field');
         }
         $element = $elementId ? Craft::$app->getElements()->getElementById((int)$elementId) : null;
-        $folderId = $field->resolveDynamicPathToImportFolderId($element);
+        $folderId = $field->getImportFolderId($element);
         if ($folderId === 0) {
             return null;
         }
