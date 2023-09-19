@@ -218,7 +218,7 @@ class Files extends Component
      */
     public function getFileForImportedAsset(Asset $asset): mixed
     {
-        if (!$asset->isFolder) {
+        if ($asset->isFolder) {
             return null;
         }
         $damFileSettings = (new Query())
