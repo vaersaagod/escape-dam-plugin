@@ -23,12 +23,12 @@
     </div>
 
     <div class="flex flex-row flex-wrap">
+        {# Select from DAM #}
+        <button type="button" class="btn icon dashed escapedam" data-icon="download" data-input="dam"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ damSelectionLabel }}</button>
         {# Select from Assets #}
         {% if enableAssetsInput %}
             <button type="button" class="btn add icon dashed escapedam" data-input="assets"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ selectionLabel }}</button>
         {% endif %}
-        {# Select from DAM #}
-        <button type="button" class="btn icon dashed escapedam" data-icon="download" data-input="dam"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ damSelectionLabel }}</button>
         <div class="spinner hidden"></div>
     </div>
 </div>

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.2.2 - 2024-01-24
+### Changed
+- The "Import from DAM" now renders before the "Add an asset" button, in DAM fields with the core assets button enabled
+
 ## 2.2.1 - 2023-09-19
 ### Fixed 
 - Fixed a bug where the "DAM Link" button wouldn't appear  
