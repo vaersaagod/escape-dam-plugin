@@ -2,7 +2,7 @@
     "name": "escape/escapedam",
     "description": "Escape DAM integration",
     "type": "craft-plugin",
-    "version": "2.2.2",
+    "version": "3.0.0-beta.1",
     "keywords": [
         "craft",
         "cms",
@@ -18,15 +18,15 @@
         }
     ],
     "require": {
-        "php": "^8.1.12",
-        "craftcms/cms": "^4.4",
-        "firebase/php-jwt": "^v6.3.2"
+        "php": "^8.2",
+        "craftcms/cms": "^5.2",
+        "firebase/php-jwt": "^v6.10.1"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
         "platform": {
-            "php": "8.1.12"
+            "php": "8.2"
         },
         "allow-plugins": {
             "yiisoft/yii2-composer": true,

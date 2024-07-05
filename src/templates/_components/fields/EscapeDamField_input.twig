@@ -1,71 +1,164 @@
 {# @var craft \craft\web\twig\variables\CraftVariable #}
 
 {% do view.registerAssetBundle("escape\\escapedam\\assetbundles\\fields\\escapedam\\EscapeDamInputSelectAsset") %}
+{% do view.registerAssetBundle("craft\\web\\assets\\prismjs\\PrismJsAsset") %}
 
-{% if name is defined and name %}
-    <input type="hidden" name="{{ name }}" value="">
+{% set name = name ?? false %}
+{% if name %}
+    {{ hiddenInput(name, '') }}
 {% endif -%}
 
-{% set elements = (elements is defined ? elements : []) -%}
-{% set jsClass = (jsClass is defined and jsClass ? jsClass : 'Craft.BaseElementSelectInput') -%}
-{% set sources = (sources is defined and sources ? sources : null) -%}
-{% set criteria = (criteria is defined and criteria ? criteria : null) -%}
-{% set storageKey = (storageKey is defined and storageKey ? storageKey : null) -%}
+{% set id = id ?? "elementselect#{random()}" -%}
+{% set elements = elements ?? [] -%}
+{% set jsClass = jsClass ?? 'Craft.BaseElementSelectInput' -%}
+{% set sources = sources ?? null -%}
+{% set condition = condition ?? null -%}
+{% set criteria = criteria ?? null -%}
+{% set sourceElementId = sourceElementId ?? null -%}
+{% set storageKey = storageKey ?? null -%}
+{% set viewMode = viewMode ?? 'list' %}
+{% set prevalidate = prevalidate ?? false %}
+{% set fieldId = fieldId ?? null %}
+{% set single = single ?? false %}
+{% set limit = single ? 1 : (limit ?? null) %}
+{% set showActionMenu = showActionMenu ?? true %}
+{% set sortable = (not limit or limit > 1) and (sortable ?? true) %}
+{% set disabled = (disabled ?? false) ? true : false %}
+{% set maintainHierarchy = maintainHierarchy ?? false %}
+{% set registerJs = registerJs ?? true %}
 
-<div id="{{ id }}" class="escapedam elementselect">
-    <div class="elements {% if viewMode == 'large' %}flex-row flex-wrap{% endif %}">
-        {% for element in elements %}
-            {% include "_elements/element" with {
-                context: 'field',
-                size: (viewMode == 'large' ? 'large' : 'small')
-            } %}
-        {% endfor %}
-    </div>
+{% set containerAttributes = {
+    id: id,
+    class: ['elementselect escapedam']|merge((class ?? [])|explodeClass),
+}|merge(containerAttributes ?? [], recursive=true) %}
+
+{% set modalSettings = {
+    modalTitle: selectionLabel ?? 'Choose'|t('app'),
+}|merge(modalSettings ?? [], recursive=true) %}
+
+{%- if block('attr') is defined %}
+    {%- set containerAttributes = containerAttributes|merge(('<div ' ~ block('attr') ~ '>')|parseAttr, recursive=true) %}
+{% endif %}
+
+{% tag 'div' with containerAttributes %}
+    {% if maintainHierarchy %}
+        {{ include('_elements/structurelist.twig', {
+            id,
+            elements,
+            context: 'field',
+            sortable: false,
+        }) }}
+    {% elseif viewMode == 'cards' %}
+        {{ include('_elements/cards.twig', {
+            elements,
+            viewMode,
+            showInGrid: showCardsInGrid ?? false,
+            disabled,
+            context: 'field',
+            sortable: false,
+        }) }}
+    {% else %}
+        {{ include('_elements/list.twig', {
+            elements,
+            viewMode,
+            disabled,
+            context: 'field',
+            sortable: false,
+        }) }}
+    {% endif %}
 
     <div class="flex flex-row flex-wrap">
         {# Select from DAM #}
-        <button type="button" class="btn icon dashed escapedam" data-icon="download" data-input="dam"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ damSelectionLabel }}</button>
+        {{ tag('button', {
+            type: 'button',
+            class: [
+                'btn',
+                'icon',
+                'dashed',
+                disabled ? 'disabled',
+                limit and elements|length >= limit ? 'hidden'
+            ]|filter,
+            text: damSelectionLabel,
+            data: {
+                icon: 'download',
+                input: 'dam'
+            }
+        }) }}
         {# Select from Assets #}
         {% if enableAssetsInput %}
-            <button type="button" class="btn add icon dashed escapedam" data-input="assets"{% if limit and elements|length >= limit %} hidden{% endif %}>{{ selectionLabel }}</button>
+            {{ tag('button', {
+                type: 'button',
+                class: [
+                    'btn',
+                    'add',
+                    'icon',
+                    'dashed',
+                    disabled ? 'disabled',
+                    limit and elements|length >= limit ? 'hidden',
+                    'escapedam',
+                ]|filter,
+                text: selectionLabel ?? 'Choose'|t('app'),
+                disabled: disabled,
+                aria: {
+                    label: selectionLabel ?? 'Choose'|t('app'),
+                    describedby: describedBy ?? false,
+                },
+                data: {
+                    input: 'assets'
+                }
+            }) }}
         {% endif %}
         <div class="spinner hidden"></div>
     </div>
-</div>
+{% endtag %}
 
-
-{% do view.registerAssetBundle("craft\\web\\assets\\prismjs\\PrismJsAsset") %}
-
-{% set jsSettings = {
-    id: id|namespaceInputId,
-    name: name|namespaceInputName,
-    elementType: elementType,
-    sources: sources,
-    condition: condition ? condition.getConfig() : null,
-    criteria: criteria,
-    sourceElementId: sourceElementId,
-    viewMode: viewMode,
-    limit: limit,
-    modalStorageKey: storageKey,
-    fieldId: fieldId,
-    defaultFieldLayoutId: defaultFieldLayoutId,
-    assetsEnabled: enableAssetsInput ? true : false,
-    prevalidate: prevalidate ?? false,
-    canUpload: false,
-    allowedExtensions,
-    modalSettings: {
-        hideSidebar: hideSidebar ?? false,
-        defaultSource: defaultSource ?? null,
-        defaultSourcePath: defaultSourcePath ?? null,
-        showSourcePath: showSourcePath ?? true,
-        indexSettings: {
-            showFolders: showFolders ?? true,
+{% if not disabled and registerJs %}
+    {% set jsSettings = {
+        id: id|namespaceInputId,
+        name: name ? name|namespaceInputName : null,
+        elementType: elementType,
+        sources: sources,
+        condition: condition ? condition.getConfig() : null,
+        referenceElementId: referenceElement.id ?? null,
+        referenceElementSiteId: referenceElement.siteId ?? null,
+        criteria: criteria,
+        allowSelfRelations: allowSelfRelations ?? false,
+        maintainHierarchy: maintainHierarchy,
+        branchLimit: branchLimit ?? null,
+        sourceElementId: sourceElementId,
+        disabledElementIds: disabledElementIds ?? null,
+        viewMode: viewMode,
+        single: single,
+        limit: limit,
+        showSiteMenu: showSiteMenu ?? false,
+        modalStorageKey: storageKey,
+        fieldId: fieldId,
+        sortable: sortable,
+        showActionMenu: showActionMenu,
+        prevalidate: prevalidate,
+        assetsEnabled: enableAssetsInput ? true : false,
+        canUpload: false,
+        defaultFieldLayoutId: defaultFieldLayoutId,
+        prevalidate: prevalidate ?? false,
+        allowedExtensions,
+        modalSettings: {
+            ...modalSettings,
+            hideSidebar: hideSidebar ?? false,
+            defaultSource: defaultSource ?? null,
+            defaultSourcePath: defaultSourcePath ?? null,
+            showSourcePath: showSourcePath ?? true,
+            indexSettings: {
+                showFolders: showFolders ?? true,
+            },
+            modalTitle: selectionLabel,
         },
-        modalTitle: selectionLabel,
-    },
-    describedBy: (describedBy ?? false) ? describedBy|split(' ')|map(id => id|namespaceInputId)|join(' ') : null
-} %}
+        describedBy: (describedBy ?? false) ? describedBy|split(' ')|map(id => id|namespaceInputId)|join(' ') : null,
+        canUpload: false,
+        fsType: fsType,
+        allowSelfRelations: allowSelfRelations ?? false
+    } %}
 
-{% js %}
-    new {{ jsClass }}({{ jsSettings|json_encode|raw }});
-{% endjs %}
+    {% js %}
+        new {{ jsClass }}({{ jsSettings|json_encode|raw }});
+    {% endjs %}
+{% endif %}

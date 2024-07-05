@@ -129,20 +129,71 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
                     this._onImportComplete();
                     return;
                 }
-                Craft.postActionRequest('elements/get-element-html', {
-                    elementId: assetId,
-                    siteId: this.settings.criteria.siteId,
-                    thumbSize: this.settings.viewMode
-                }, function(data) {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        var html = $(data.html);
-                        Craft.appendHeadHtml(data.headHtml);
-                        this.selectUploadedFile(Craft.getElementInfo(html));
-                    }
-                    this._onImportComplete();
-                }.bind(this));
+
+                Craft.sendActionRequest('POST', 'app/render-elements', {
+                    data: {
+                        elements: [
+                            {
+                                type: 'craft\\elements\\Asset',
+                                id: assetId,
+                                siteId: this.settings.criteria.siteId,
+                                instances: [
+                                    {
+                                        context: 'field',
+                                        ui: ['list', 'large'].includes(this.settings.viewMode)
+                                            ? 'chip'
+                                            : 'card',
+                                        size: this.settings.viewMode === 'large' ? 'large' : 'small',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                })
+                    .then(async ({data}) => {
+                        const elementInfo = Craft.getElementInfo(
+                            data.elements[assetId][0]
+                        );
+                        this.selectElements([elementInfo]);
+
+                        await Craft.appendHeadHtml(data.headHtml);
+                        await Craft.appendBodyHtml(data.bodyHtml);
+
+                        this._onImportComplete();
+
+                        // Last file
+                        // if (this.uploader.isLastUpload()) {
+                        //     this.progressBar.hideProgressBar();
+                        //     this.$container.removeClass('uploading');
+                        //     this.$container.trigger('change');
+                        // }
+                    })
+                    .catch((error) => {
+                        if (error && error.response) {
+                            Craft.cp.displayError(response.data.message);
+                        } else {
+                            Craft.cp.displayError();
+                            throw error;
+                        }
+                    });
+
+                Craft.cp.runQueue();
+
+
+                // Craft.postActionRequest('app/render-elements', {
+                //     elementId: assetId,
+                //     site: this.settings.criteria.siteId,
+                //     thumbSize: this.settings.viewMode
+                // }, function(data) {
+                //     if (data.error) {
+                //         alert(data.error);
+                //     } else {
+                //         var html = $(data.html);
+                //         Craft.appendHeadHtml(data.headHtml);
+                //         this.selectUploadedFile(Craft.getElementInfo(html));
+                //     }
+                //     this._onImportComplete();
+                // }.bind(this));
             } else {
                 alert(response.error || 'Something went wrong');
                 console.log(response);

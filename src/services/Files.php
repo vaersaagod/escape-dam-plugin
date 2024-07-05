@@ -357,10 +357,19 @@ class Files extends Component
         if (!\is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
             return;
         }
-        $fieldValues = [];
+        $fieldLayout = $asset->getFieldLayout();
+        $customFieldValues = [];
+        $nativeFieldValeus = [];
         foreach ($metaDataFieldMap as $attribute => $fieldHandle) {
-            $fieldValues[$fieldHandle] = $data[$attribute] ?? null;
+            if ($customField = $fieldLayout->getFieldByHandle($fieldHandle)) {
+                $customFieldValues[$fieldHandle] = $data[$attribute] ?? null;
+            } else {
+                $nativeFieldValues[$fieldHandle] = $data[$attribute] ?? null;
+            }
         }
-        $asset->setFieldValues($fieldValues);
+        $asset->setFieldValues($customFieldValues);
+        foreach ($nativeFieldValues as $fieldHandle => $value) {
+            $asset->$fieldHandle = $value;
+        }
     }
 }

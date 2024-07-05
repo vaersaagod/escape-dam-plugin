@@ -20,12 +20,12 @@ use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\DefineElementInnerHtmlEvent;
 use craft\events\DefineHtmlEvent;
+use craft\events\DefineAttributeHtmlEvent;
 use craft\events\ElementEvent;
 use craft\events\GetAssetThumbUrlEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
-use craft\events\SetElementTableAttributeHtmlEvent;
 use craft\helpers\Cp;
 use craft\helpers\ElementHelper;
 use craft\helpers\Html;
@@ -111,7 +111,7 @@ class EscapeDam extends Plugin
 
         // Register CP asset bundle
         if (\Craft::$app->getRequest()->getIsCpRequest() && !\Craft::$app->getRequest()->getIsLoginRequest()) {
-            \Craft::$app->onInit(static function() {
+            \Craft::$app->onInit(static function () {
                 try {
                     $user = Craft::$app->getUser()->getIdentity();
                     if (!$user || !$user->can('accessCp')) {
@@ -171,7 +171,7 @@ class EscapeDam extends Plugin
             $event->tableAttributes['_escapedam_url'] = Craft::t('site', 'DAM Link');
         });
 
-        Event::on(Asset::class, Element::EVENT_SET_TABLE_ATTRIBUTE_HTML, static function (SetElementTableAttributeHtmlEvent $event) {
+        Event::on(Asset::class, Element::EVENT_DEFINE_ATTRIBUTE_HTML, static function (DefineAttributeHtmlEvent $event) {
             $attribute = $event->attribute;
             if ($attribute === '_escapedam_url' && $event->sender instanceof Asset && $damUrl = $event->sender->getDamUrl()) {
                 $event->html = Html::a('Open in DAM', $damUrl, [
@@ -255,7 +255,7 @@ class EscapeDam extends Plugin
 
         Event::on(
             Utilities::class,
-            Utilities::EVENT_REGISTER_UTILITY_TYPES,
+            Utilities::EVENT_REGISTER_UTILITIES,
             function (RegisterComponentTypesEvent $event) {
                 $event->types[] = EscapeDamUtility::class;
             }
@@ -264,7 +264,7 @@ class EscapeDam extends Plugin
         Event::on(
             UrlManager::class,
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
-            function(RegisterUrlRulesEvent $event) {
+            function (RegisterUrlRulesEvent $event) {
                 $cpSectionPath = $this->getSettings()->cpSectionPath ?? 'escapedam';
                 $event->rules[$cpSectionPath] = ['template' => 'escapedam/_index'];
             }
