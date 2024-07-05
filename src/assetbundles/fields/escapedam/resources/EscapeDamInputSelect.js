@@ -160,13 +160,6 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
                         await Craft.appendBodyHtml(data.bodyHtml);
 
                         this._onImportComplete();
-
-                        // Last file
-                        // if (this.uploader.isLastUpload()) {
-                        //     this.progressBar.hideProgressBar();
-                        //     this.$container.removeClass('uploading');
-                        //     this.$container.trigger('change');
-                        // }
                     })
                     .catch((error) => {
                         if (error && error.response) {
@@ -178,22 +171,6 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
                     });
 
                 Craft.cp.runQueue();
-
-
-                // Craft.postActionRequest('app/render-elements', {
-                //     elementId: assetId,
-                //     site: this.settings.criteria.siteId,
-                //     thumbSize: this.settings.viewMode
-                // }, function(data) {
-                //     if (data.error) {
-                //         alert(data.error);
-                //     } else {
-                //         var html = $(data.html);
-                //         Craft.appendHeadHtml(data.headHtml);
-                //         this.selectUploadedFile(Craft.getElementInfo(html));
-                //     }
-                //     this._onImportComplete();
-                // }.bind(this));
             } else {
                 alert(response.error || 'Something went wrong');
                 console.log(response);
