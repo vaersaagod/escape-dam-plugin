@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.3.1 - 2025-03-03
+### Changed
+- Output CP edit URLs instead of front end URLs in the `escapedam/api/file-usage` endpoint
+
 ## 2.3.0 - 2025-03-03
 ### Added
 - Added the `escapedam/api/file-usage` endpoint
