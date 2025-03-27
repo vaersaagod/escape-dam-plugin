@@ -99,9 +99,16 @@ class Files extends Component
 
         // What kind of file is this?
         $kind = $fileData['kind'] ?? null;
-        $fileUrl = $fileData['assetUrl'];
+        $fileUrl = $fileData['assetUrl'] ?? null;
         if ($kind === Asset::KIND_IMAGE) {
-            // Download the original image file
+            // Check the file size and dimensions; if it's too large we don't want to download the original
+            $width = $fileData['width'] ?? 0;
+            $height = $fileData['height'] ?? 0;
+            $size = $fileData['size'] ?? 0;
+            if ($width > 4000 || $height > 4000 || $size > ConfigHelper::sizeInBytes('8M')) {
+                $fileUrl = $fileData['imageUrl'] ?? null;
+            }
+            // Download the image file
             $tempPath = AssetsHelper::tempFilePath($fileData['extension']);
             FileHelper::downloadFile($fileUrl, $tempPath);
         } elseif ($kind === Asset::KIND_VIDEO) {
