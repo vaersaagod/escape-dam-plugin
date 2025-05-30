@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.4.1 - 2025-05-30
+### Fixed
+- Fixed a bug where the selected "Import Location" wasn't selected in field setting forms
+
 ## 2.4.0 - 2025-03-27
 ### Changed
 - For very large source images, a 2500px transform will be downloaded instead of the original when importing files from the DAM

@@ -87,15 +87,6 @@ class EscapeDamField extends Assets
     }
 
     /**
-     * @inheritdoc
-     */
-    public function getSettingsHtml(): ?string
-    {
-        $this->damImportLocationSource = $this->_volumeSourceToFolderSource($this->damImportLocationSource);
-        return parent::getSettingsHtml();
-    }
-
-    /**
      * @param ElementInterface|null $element
      * @return int
      * @throws InvalidSubpathException
