@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\base\Volume;
 use craft\elements\Asset;
+use craft\errors\InvalidFsException;
 use craft\errors\InvalidSubpathException;
 use craft\errors\VolumeException;
 use craft\fields\Assets;
@@ -87,21 +88,10 @@ class EscapeDamField extends Assets
     }
 
     /**
-     * @inheritdoc
-     */
-    public function getSettingsHtml(): ?string
-    {
-        $this->damImportLocationSource = $this->_volumeSourceToFolderSource($this->damImportLocationSource);
-        return parent::getSettingsHtml();
-    }
-
-    /**
      * @param ElementInterface|null $element
      * @return int
      * @throws InvalidSubpathException
-     * @throws InvalidVolumeException
      * @throws VolumeException
-     * @throws \ReflectionException
      */
     public function getImportFolderId(ElementInterface $element = null): int
     {
@@ -135,9 +125,10 @@ class EscapeDamField extends Assets
      *
      * @param ElementInterface|null $element
      * @return VolumeFolder
+     * @throws InvalidFsException
      * @throws InvalidSubpathException
-     * @throws InvalidVolumeException
      * @throws VolumeException
+     * @throws \ReflectionException
      */
     private function _importFolder(ElementInterface $element = null): VolumeFolder
     {
@@ -148,12 +139,12 @@ class EscapeDamField extends Assets
         $assets = Craft::$app->getAssets();
         try {
             if (!$sourceKey || !$folder = $this->_findFolder($sourceKey, $subpath, $element, true)) {
-                throw new VolumeException();
+                throw new InvalidFsException();
             }
-        } catch (VolumeException $e) {
-            throw new InvalidVolumeException(Craft::t('app', 'The {field} field’s {setting} setting is set to an invalid volume.', [
+        } catch (InvalidFsException $e) {
+            throw new InvalidFsException(Craft::t('app', 'The {field} field’s {setting} setting is set to an invalid volume.', [
                 'field' => $this->name,
-                'setting' => $settingName,
+                'setting' => $settingName(),
             ]), 0, $e);
         } catch (InvalidSubpathException $e) {
             // If this is a new/disabled element, the subpath probably just contained a token that returned null, like {id}

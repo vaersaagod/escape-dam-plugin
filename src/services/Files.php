@@ -354,21 +354,21 @@ class Files extends Component
      * @param array $data
      * @return void
      */
-    private function _populateImportedAssetFieldValues(Asset &$asset, array $data): void
+    private function _populateImportedAssetFieldValues(Asset $asset, array $data): void
     {
         if ($asset->isFolder) {
             return;
         }
         $settings = EscapeDam::getInstance()->getSettings();
         $metaDataFieldMap = $settings->metaDataFieldMap ?: null;
-        if (!\is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
+        if (!is_array($metaDataFieldMap) || empty($metaDataFieldMap)) {
             return;
         }
         $fieldLayout = $asset->getFieldLayout();
         $customFieldValues = [];
-        $nativeFieldValeus = [];
+        $nativeFieldValues = [];
         foreach ($metaDataFieldMap as $attribute => $fieldHandle) {
-            if ($customField = $fieldLayout->getFieldByHandle($fieldHandle)) {
+            if ($fieldLayout->getFieldByHandle($fieldHandle)) {
                 $customFieldValues[$fieldHandle] = $data[$attribute] ?? null;
             } else {
                 $nativeFieldValues[$fieldHandle] = $data[$attribute] ?? null;

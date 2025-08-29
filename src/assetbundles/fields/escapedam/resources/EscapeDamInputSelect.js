@@ -172,7 +172,7 @@ Craft.EscapeDam.DamSelectInput = Craft.AssetSelectInput.extend({
 
                 Craft.cp.runQueue();
             } else {
-                alert(response.error || 'Something went wrong');
+                alert(response.message || 'Something went wrong');
                 console.log(response);
                 this._onImportComplete();
             }

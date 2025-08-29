@@ -25,10 +25,12 @@ use craft\events\ElementEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
+use craft\helpers\App;
 use craft\helpers\Cp;
 use craft\helpers\ElementHelper;
 use craft\helpers\Html;
 use craft\helpers\Json;
+use craft\log\MonologTarget;
 use craft\services\Assets;
 use craft\services\Elements;
 use craft\services\Fields;
@@ -48,6 +50,7 @@ use escape\escapedam\services\Users;
 use escape\escapedam\utilities\EscapeDam as EscapeDamUtility;
 use escape\escapedam\web\twig\variables\EscapeDamVariable;
 
+use Psr\Log\LogLevel;
 use yii\base\Event;
 
 /**
@@ -81,6 +84,17 @@ class EscapeDam extends Plugin
     {
 
         parent::init();
+
+        // Custom log target
+        Craft::getLogger()->dispatcher->targets[] = new MonologTarget([
+            'name' => 'escapedam',
+            'categories' => ['escapedam', 'escape\\escapedam\\*'],
+            'extractExceptionTrace' => !App::devMode(),
+            'allowLineBreaks' => App::devMode(),
+            'level' => App::devMode() ? LogLevel::INFO : LogLevel::WARNING,
+            'logContext' => false,
+            'maxFiles' => 10,
+        ]);
 
         // Register services
         $this->setComponents([
