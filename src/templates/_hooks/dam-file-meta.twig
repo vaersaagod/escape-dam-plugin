@@ -1,0 +1,19 @@
+{% import '_includes/forms' as _forms %}
+
+{% set asset = asset ?? null %}
+
+{% if asset.isDamFile|default %}
+    <div class="field">
+        <div class="heading">
+            <span>DAM ID</span>
+        </div>
+        <div class="input">
+            {{ include('_includes/forms/copytextbtn.twig', { value: asset.damId }, with_context=false) }}
+        </div>
+    </div>
+    <div class="field">
+        <div class="input" style="width:100%;">
+            <a href="{{ asset.damUrl }}" class="btn" data-icon="external" target="_blank">{{ 'Open in DAM'|t('escapedam') }}</a>
+        </div>
+    </div>
+{% endif %}

@@ -107,7 +107,7 @@ class Install extends Migration
             'fieldId',
             '{{%fields}}',
             'id',
-            'CASCADE',
+            'SET NULL',
             'CASCADE'
         );
         $this->addForeignKey(
@@ -116,7 +116,7 @@ class Install extends Migration
             'sourceElementId',
             '{{%elements}}',
             'id',
-            'CASCADE',
+            'SET NULL',
             'CASCADE'
         );
     }

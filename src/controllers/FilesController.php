@@ -36,15 +36,11 @@ class FilesController extends Controller
         $siteId = (int)$request->getParam('siteId') ?: null;
         $elementId = (int)$request->getParam('elementId') ?: null;
 
-        // Has the file already been imported?
-        $asset = EscapeDam::getInstance()->files->getImportedAsset($fileId, $fieldId, $elementId);
-        if (empty($asset)) {
-            try {
-                $asset = EscapeDam::getInstance()->files->importFile($fileId, $fieldId, $elementId, $siteId, $folderId);
-            } catch (\Throwable $e) {
-                Craft::error($e, __METHOD__);
-                return $this->asFailure($e->getMessage());
-            }
+        try {
+            $asset = EscapeDam::getInstance()->files->importFile($fileId, $fieldId, $elementId, $siteId, $folderId);
+        } catch (\Throwable $e) {
+            Craft::error($e, __METHOD__);
+            return $this->asFailure($e->getMessage());
         }
 
         return $this->asJson([

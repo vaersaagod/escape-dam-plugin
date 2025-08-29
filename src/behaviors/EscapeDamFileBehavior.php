@@ -9,6 +9,7 @@ use craft\helpers\Json;
 use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+
 use escape\escapedam\EscapeDam;
 use escape\escapedam\helpers\MuxHelper;
 
@@ -20,14 +21,8 @@ use yii\base\Behavior;
 class EscapeDamFileBehavior extends Behavior
 {
 
-    /** @var bool */
-    private bool $_isDamFile;
-
-    /** @var bool */
-    private bool $_isDamVideo;
-
-    /** @var bool */
-    private bool $_isDamImage;
+    /** @var array|null */
+    private ?array $_damFileData;
 
     /** @var string|null */
     private ?string $_muxPlaybackId = null;
@@ -36,45 +31,61 @@ class EscapeDamFileBehavior extends Behavior
     private ?array $_damVideoData;
 
     /**
-     * @throws \yii\base\InvalidConfigException
+     * @return array|null
      */
-    public function isDamFile(): bool
+    public function getDamFileData(): ?array
     {
         /** @var Asset $asset */
         $asset = $this->owner;
-        if ($asset->isFolder) {
-            return false;
+        if (!isset($this->_damFileData)) {
+            $data = EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
+            if (!is_array($data) || empty($data['id'])) {
+                $this->_damFileData = null;
+            } else {
+                $this->_damFileData = $data;
+            }
         }
-        if (!isset($this->_isDamFile)) {
-            $this->_isDamFile = EscapeDam::getInstance()->files->isImportedAsset($asset);
-        }
-        return $this->_isDamFile;
+        return $this->_damFileData;
     }
 
     /**
-     * @throws \yii\base\InvalidConfigException
+     * @return bool
+     */
+    public function isDamFile(): bool
+    {
+        return !empty($this->getDamFileData());
+    }
+
+    /**
+     * @return bool
      */
     public function isDamImage(): bool
     {
-        if (!isset($this->_isDamImage)) {
-            /** @var Asset $asset */
-            $asset = $this->owner;
-            $this->_isDamImage = $this->isDamFile() && $asset->kind === Asset::KIND_IMAGE;
-        }
-        return $this->_isDamImage;
+        /** @var Asset $asset */
+        $asset = $this->owner;
+        return $this->isDamFile() && $asset->kind === Asset::KIND_IMAGE;
     }
 
     /**
-     * @throws \yii\base\InvalidConfigException
+     * @return bool
      */
     public function isDamVideo(): bool
     {
-        if (!isset($this->_isDamVideo)) {
-            /** @var Asset $asset */
-            $asset = $this->owner;
-            $this->_isDamVideo = $this->isDamFile() && $asset->kind === Asset::KIND_JSON;
+        /** @var Asset $asset */
+        $asset = $this->owner;
+        return $this->isDamFile() && $asset->kind === Asset::KIND_JSON;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getDamId(): ?int
+    {
+        $data = $this->getDamFileData();
+        if (empty($data)) {
+            return null;
         }
-        return $this->_isDamVideo;
+        return $data['id'];
     }
 
     /**
@@ -82,17 +93,16 @@ class EscapeDamFileBehavior extends Behavior
      */
     public function getDamUrl(): ?string
     {
+        $data = $this->getDamFileData();
+        if (empty($data)) {
+            return null;
+        }
         $damUrl = EscapeDam::getInstance()->getSettings()->damUrl ?? '';
         if (!UrlHelper::isAbsoluteUrl($damUrl)) {
+            Craft::error('No DAM URL in settings', __METHOD__);
             return null;
         }
-        /** @var Asset $asset */
-        $asset = $this->owner;
-        $damFile = EscapeDam::getInstance()->files->getFileForImportedAsset($asset);
-        if (!$damFile || !is_array($damFile) || !isset($damFile['id'])) {
-            return null;
-        }
-        return rtrim($damUrl, '/') . '/edit/' . $damFile['id'];
+        return rtrim($damUrl, '/') . '/edit/' . $data['id'];
     }
 
     /**
@@ -189,8 +199,8 @@ class EscapeDamFileBehavior extends Behavior
         }
         /** @var Asset $asset */
         $asset = $this->owner;
-        $data = Json::decodeIfJson(EscapeDam::getInstance()->files->getContents($asset), true);
-        if (empty($data) || !\is_array($data)) {
+        $data = Json::decodeIfJson(EscapeDam::getInstance()->files->getContents($asset));
+        if (empty($data) || !is_array($data)) {
             return null;
         }
         return $data;

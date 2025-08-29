@@ -12,7 +12,6 @@ use craft\errors\InvalidSubpathException;
 use craft\errors\VolumeException;
 use craft\fields\Assets;
 use craft\helpers\Assets as AssetsHelper;
-use craft\helpers\FileHelper;
 use craft\models\VolumeFolder;
 
 use escape\escapedam\EscapeDam;

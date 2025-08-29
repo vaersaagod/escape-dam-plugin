@@ -4,7 +4,6 @@ namespace escape\escapedam\services;
 
 use Craft;
 use craft\base\Component;
-use craft\base\LocalVolumeInterface;
 use craft\db\Query;
 use craft\elements\Asset;
 use craft\helpers\Assets as AssetsHelper;
@@ -18,7 +17,6 @@ use escape\escapedam\EscapeDam;
 use escape\escapedam\fields\EscapeDamField;
 use escape\escapedam\helpers\ApiHelper;
 use escape\escapedam\helpers\FileHelper;
-use escape\escapedam\models\Settings;
 use escape\escapedam\records\ImportedFile as ImportedFileRecord;
 
 class Files extends Component
@@ -31,16 +29,16 @@ class Files extends Component
     public function getFolderForImportByFieldAndElement(int $fieldId, int $elementId = null): ?VolumeFolder
     {
         /** @var EscapeDamField $field */
-        $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
-        if (!($field instanceof EscapeDamField)) {
+        $field = Craft::$app->getFields()->getFieldById($fieldId);
+        if (!$field instanceof EscapeDamField) {
             throw new \Exception('The field provided is not an Escape DAM field');
         }
-        $element = $elementId ? Craft::$app->getElements()->getElementById((int)$elementId) : null;
+        $element = $elementId ? Craft::$app->getElements()->getElementById($elementId) : null;
         $folderId = $field->getImportFolderId($element);
-        if ($folderId === 0) {
+        if (empty($folderId)) {
             return null;
         }
-        return Craft::$app->getAssets()->findFolder(['id' => (int)$folderId]);
+        return Craft::$app->getAssets()->findFolder(['id' => $folderId]);
     }
 
     /**
@@ -72,11 +70,12 @@ class Files extends Component
             }
         }
 
-        // Has the file already been imported?
-        $asset = $this->getImportedAsset($fileId, $fieldId, $elementId);
-
-        if ($asset !== null) {
-            return $asset;
+        if ($elementId) {
+            $element = Craft::$app->getElements()->getElementById($elementId);
+            if (!$element) {
+                throw new \Exception("Element ID $elementId not found");
+            }
+            $elementId = $element->getCanonicalId();
         }
 
         $assets = Craft::$app->getAssets();
@@ -234,7 +233,7 @@ class Files extends Component
             ->where('importedfiles.assetId=:assetId', [':assetId' => (int)$asset->getId()])
             ->scalar();
 
-        if (!$damFileSettings || !Json::isJsonObject($damFileSettings)) {
+        if (empty($damFileSettings) || !Json::isJsonObject($damFileSettings)) {
             return null;
         }
 

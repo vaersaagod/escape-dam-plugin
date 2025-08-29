@@ -176,7 +176,7 @@ class EscapeDam extends Plugin
                 if (!$event->sender instanceof Asset) {
                     return;
                 }
-                $event->html .= \Craft::$app->getView()->renderTemplate('escapedam/_hooks/dam-link.twig', ['asset' => $event->sender]);
+                $event->html .= \Craft::$app->getView()->renderTemplate('escapedam/_hooks/dam-file-meta.twig', ['asset' => $event->sender]);
             }
         );
 
