@@ -22,7 +22,6 @@ use craft\events\DefineElementInnerHtmlEvent;
 use craft\events\DefineHtmlEvent;
 use craft\events\DefineAttributeHtmlEvent;
 use craft\events\ElementEvent;
-use craft\events\GetAssetThumbUrlEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
@@ -202,6 +201,7 @@ class EscapeDam extends Plugin
             }
         );
 
+        // TODO fix deprecated code
         Event::on(
             Cp::class,
             Cp::EVENT_DEFINE_ELEMENT_INNER_HTML,
@@ -267,6 +267,14 @@ class EscapeDam extends Plugin
             function (RegisterUrlRulesEvent $event) {
                 $cpSectionPath = $this->getSettings()->cpSectionPath ?? 'escapedam';
                 $event->rules[$cpSectionPath] = ['template' => 'escapedam/_index'];
+            }
+        );
+
+        Event::on(
+            UrlManager::class,
+            UrlManager::EVENT_REGISTER_SITE_URL_RULES,
+            static function (RegisterUrlRulesEvent $event) {
+                $event->rules['escapedam/api/file-usage'] = 'escapedam/api/file-usage';
             }
         );
 
