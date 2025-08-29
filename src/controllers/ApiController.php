@@ -67,7 +67,7 @@ class ApiController extends Controller
                         'sourceElement' => [
                             'title' => $element->title,
                             'id' => $element->id,
-                            'url' => $element->getUrl(),
+                            'url' => $element->getCpEditUrl(),
                             'status' => $element->status,
                         ],
                     ];
