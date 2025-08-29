@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 ## Unreleased
 ### Added
 - Added the `escapedam/api/file-usage` endpoint
+### Changed
+- For very large source images, a 2500px transform will be downloaded instead of the original when importing files from the DAM
 
 ## 3.0.0 - 2024-08-05
 ### Added
