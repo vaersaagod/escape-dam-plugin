@@ -155,7 +155,8 @@
         describedBy: (describedBy ?? false) ? describedBy|split(' ')|map(id => id|namespaceInputId)|join(' ') : null,
         canUpload: false,
         fsType: fsType,
-        allowSelfRelations: allowSelfRelations ?? false
+        allowSelfRelations: allowSelfRelations ?? false,
+        enableAssetsInput
     } %}
 
     {% js %}

@@ -12,15 +12,18 @@ namespace escape\escapedam;
 
 use Craft;
 use craft\base\Element;
+use craft\base\Field;
 use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Asset;
 use craft\events\AssetPreviewEvent;
 use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineBehaviorsEvent;
+use craft\events\DefineElementHtmlEvent;
 use craft\events\DefineElementInnerHtmlEvent;
 use craft\events\DefineHtmlEvent;
 use craft\events\DefineAttributeHtmlEvent;
+use craft\events\DefineMenuItemsEvent;
 use craft\events\ElementEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
@@ -267,6 +270,33 @@ class EscapeDam extends Plugin
             }
         );
 
+        // Add data-dam-id to DAM asset chips and cards
+        foreach ([
+            Cp::EVENT_DEFINE_ELEMENT_CHIP_HTML,
+            Cp::EVENT_DEFINE_ELEMENT_CARD_HTML,
+                 ] as $event) {
+            Event::on(
+                Cp::class,
+                $event,
+                static function(DefineElementHtmlEvent $event) {
+                    $element = $event->element;
+                    if (!$element instanceof Asset) {
+                        return;
+                    }
+                    try {
+                        $damFileId = $element->getDamId();
+                        $html = Html::modifyTagAttributes($event->html, [
+                            'data-dam-id' => !empty($damFileId) ? $damFileId : false,
+                        ]);
+                    } catch (\Throwable $e) {
+                        Craft::error($e, __METHOD__);
+                        return;
+                    }
+                    $event->html = $html;
+                }
+            );
+        }
+
         Event::on(
             Utilities::class,
             Utilities::EVENT_REGISTER_UTILITIES,
@@ -290,15 +320,6 @@ class EscapeDam extends Plugin
             static function (RegisterUrlRulesEvent $event) {
                 $event->rules['escapedam/api/file-usage'] = 'escapedam/api/file-usage';
             }
-        );
-
-        Craft::info(
-            Craft::t(
-                'escapedam',
-                '{name} plugin loaded',
-                ['name' => $this->name]
-            ),
-            __METHOD__
         );
     }
 
