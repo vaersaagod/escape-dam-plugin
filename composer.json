@@ -1,50 +1,50 @@
 {
-    "name": "escape/escapedam",
-    "description": "Escape DAM integration",
-    "type": "craft-plugin",
-    "version": "3.0.0",
-    "keywords": [
-        "craft",
-        "cms",
-        "craftcms",
-        "craft-plugin",
-        "escape dam"
-    ],
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Værsågod",
-            "homepage": "https://vaersaagod.no"
-        }
-    ],
-    "require": {
-        "php": "^8.2",
-        "craftcms/cms": "^5.2",
-        "firebase/php-jwt": "^v6.10.1"
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true,
-    "config": {
-        "platform": {
-            "php": "8.2"
-        },
-        "allow-plugins": {
-            "yiisoft/yii2-composer": true,
-            "craftcms/plugin-installer": true
-        }
-    },
-    "autoload": {
-        "psr-4": {
-          "escape\\escapedam\\": "src/"
-        }
-    },
-    "extra": {
-        "name": "Escape DAM",
-        "handle": "escapedam",
-        "changelogUrl": "",
-        "class": "escape\\escapedam\\EscapeDam"
-    },
-    "require-dev": {
-        "craftcms/rector": "dev-main"
+  "name": "escape/escapedam",
+  "description": "Escape DAM integration",
+  "type": "craft-plugin",
+  "version": "3.1.0-beta.2",
+  "keywords": [
+    "craft",
+    "cms",
+    "craftcms",
+    "craft-plugin",
+    "escape dam"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Værsågod",
+      "homepage": "https://vaersaagod.no"
     }
+  ],
+  "require": {
+    "php": "^8.2",
+    "craftcms/cms": "^5.2",
+    "firebase/php-jwt": "^v6.10.1"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "platform": {
+      "php": "8.2"
+    },
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "escape\\escapedam\\": "src/"
+    }
+  },
+  "extra": {
+    "name": "Escape DAM",
+    "handle": "escapedam",
+    "changelogUrl": "",
+    "class": "escape\\escapedam\\EscapeDam"
+  },
+  "require-dev": {
+    "craftcms/rector": "dev-main"
+  }
 }
