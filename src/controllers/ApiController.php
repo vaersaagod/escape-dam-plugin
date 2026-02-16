@@ -4,7 +4,7 @@ namespace escape\escapedam\controllers;
 
 use Craft;
 use craft\db\Query;
-use craft\elements\MatrixBlock;
+use craft\elements\Entry;
 use craft\helpers\ConfigHelper;
 use craft\web\Controller;
 
@@ -59,8 +59,8 @@ class ApiController extends Controller
                 foreach ($usagesQuery->all() as $usage) {
                     $sourceElementId = $usage['sourceElementId'];
                     $element = Craft::$app->getElements()->getElementById($sourceElementId);
-                    if ($element instanceof MatrixBlock) {
-                        $element = $element->getOwner();
+                    if ($element instanceof Entry) {
+                        $element = $element->getRootOwner();
                     }
                     $usages[] = [
                         ...$usage,
