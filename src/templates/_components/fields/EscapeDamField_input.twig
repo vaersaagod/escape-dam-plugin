@@ -14,8 +14,10 @@
 {% set sources = sources ?? null -%}
 {% set condition = condition ?? null -%}
 {% set criteria = criteria ?? null -%}
+{% set searchCriteria = null %}{# No search criteria supported for this field! #}
 {% set sourceElementId = sourceElementId ?? null -%}
 {% set storageKey = storageKey ?? null -%}
+{% set defaultPlacement = defaultPlacement ?? 'end' %}
 {% set viewMode = viewMode ?? 'list' %}
 {% set prevalidate = prevalidate ?? false %}
 {% set fieldId = fieldId ?? null %}
@@ -24,35 +26,27 @@
 {% set showActionMenu = showActionMenu ?? true %}
 {% set sortable = (not limit or limit > 1) and (sortable ?? true) %}
 {% set disabled = (disabled ?? false) ? true : false %}
-{% set maintainHierarchy = maintainHierarchy ?? false %}
 {% set registerJs = registerJs ?? true %}
+
+{% set allowAdd = allowAdd ?? true %}
+{% set allowRemove = allowRemove ?? true %}
 
 {% set containerAttributes = {
     id: id,
     class: ['elementselect escapedam']|merge((class ?? [])|explodeClass),
 }|merge(containerAttributes ?? [], recursive=true) %}
 
-{% set modalSettings = {
-    modalTitle: selectionLabel ?? 'Choose'|t('app'),
-}|merge(modalSettings ?? [], recursive=true) %}
-
 {%- if block('attr') is defined %}
     {%- set containerAttributes = containerAttributes|merge(('<div ' ~ block('attr') ~ '>')|parseAttr, recursive=true) %}
 {% endif %}
 
+{% from "_includes/forms" import text %}
+
 {% tag 'div' with containerAttributes %}
-    {% if maintainHierarchy %}
-        {{ include('_elements/structurelist.twig', {
-            id,
-            elements,
-            context: 'field',
-            sortable: false,
-        }) }}
-    {% elseif viewMode == 'cards' %}
+    {% if viewMode in ['cards', 'cards-grid'] %}
         {{ include('_elements/cards.twig', {
             elements,
-            viewMode,
-            showInGrid: showCardsInGrid ?? false,
+            showInGrid: showInGrid ?? (viewMode == 'cards-grid'),
             disabled,
             context: 'field',
             sortable: false,
@@ -60,7 +54,8 @@
     {% else %}
         {{ include('_elements/list.twig', {
             elements,
-            viewMode,
+            size: size ?? (viewMode in ['thumbs', 'large'] ? 'large' : 'small'),
+            inline: inline ?? (viewMode in ['list-inline', 'thumbs', 'large']),
             disabled,
             context: 'field',
             sortable: false,
@@ -68,45 +63,49 @@
     {% endif %}
 
     <div class="flex flex-row flex-wrap">
-        {# Select from DAM #}
-        {{ tag('button', {
-            type: 'button',
-            class: [
-                'btn',
-                'icon',
-                'dashed',
-                disabled ? 'disabled',
-                limit and elements|length >= limit ? 'hidden'
-            ]|filter,
-            text: damSelectionLabel,
-            data: {
-                icon: 'download',
-                input: 'dam'
-            }
-        }) }}
-        {# Select from Assets #}
-        {% if enableAssetsInput %}
+        {% if allowAdd %}
+            {# Select from DAM #}
             {{ tag('button', {
                 type: 'button',
                 class: [
                     'btn',
-                    'add',
                     'icon',
                     'dashed',
+                    'wrap',
                     disabled ? 'disabled',
-                    limit and elements|length >= limit ? 'hidden',
-                    'escapedam',
+                    limit and elements|length >= limit ? 'hidden'
                 ]|filter,
-                text: selectionLabel ?? 'Choose'|t('app'),
-                disabled: disabled,
-                aria: {
-                    label: selectionLabel ?? 'Choose'|t('app'),
-                    describedby: describedBy ?? false,
-                },
+                text: damSelectionLabel,
                 data: {
-                    input: 'assets'
+                    icon: 'download',
+                    input: 'dam'
                 }
             }) }}
+            {# Select from Assets #}
+            {% if enableAssetsInput %}
+                {{ tag('button', {
+                    type: 'button',
+                    class: [
+                        'btn',
+                        'add',
+                        'icon',
+                        'dashed',
+                        'wrap',
+                        disabled ? 'disabled',
+                        limit and elements|length >= limit ? 'hidden',
+                        'escapedam',
+                    ]|filter,
+                    text: selectionLabel ?? 'Choose'|t('app'),
+                    disabled: disabled,
+                    aria: {
+                        label: selectionLabel ?? 'Choose'|t('app'),
+                        describedby: describedBy ?? false,
+                    },
+                    data: {
+                        input: 'assets'
+                    }
+                }) }}
+            {% endif %}
         {% endif %}
         <div class="spinner hidden"></div>
     </div>
@@ -120,32 +119,27 @@
         sources: sources,
         condition: condition ? condition.getConfig() : null,
         referenceElementId: referenceElement.id ?? null,
+        referenceElementOwnerId: (referenceElement ?? null) is instance of('craft\\base\\NestedElementInterface')
+            ? referenceElement.getOwnerId()
+            : null,
         referenceElementSiteId: referenceElement.siteId ?? null,
         criteria: criteria,
-        allowSelfRelations: allowSelfRelations ?? false,
-        maintainHierarchy: maintainHierarchy,
-        branchLimit: branchLimit ?? null,
+        searchCriteria: null,
         sourceElementId: sourceElementId,
-        disabledElementIds: disabledElementIds ?? null,
+        defaultPlacement,
         viewMode: viewMode,
-        single: single,
         limit: limit,
-        showSiteMenu: showSiteMenu ?? false,
         modalStorageKey: storageKey,
         fieldId: fieldId,
-        sortable: sortable,
-        showActionMenu: showActionMenu,
-        prevalidate: prevalidate,
-        assetsEnabled: enableAssetsInput ? true : false,
-        canUpload: false,
-        defaultFieldLayoutId: defaultFieldLayoutId,
         prevalidate: prevalidate ?? false,
-        allowedExtensions,
+        canUpload: false,
+        fsType: fsType,
+        defaultFieldLayoutId: defaultFieldLayoutId,
         modalSettings: {
-            ...modalSettings,
             hideSidebar: hideSidebar ?? false,
             defaultSource: defaultSource ?? null,
             defaultSourcePath: defaultSourcePath ?? null,
+            preferStoredSource: preferStoredSource ?? false,
             showSourcePath: showSourcePath ?? true,
             indexSettings: {
                 showFolders: showFolders ?? true,
@@ -153,9 +147,10 @@
             modalTitle: selectionLabel,
         },
         describedBy: (describedBy ?? false) ? describedBy|split(' ')|map(id => id|namespaceInputId)|join(' ') : null,
-        canUpload: false,
-        fsType: fsType,
         allowSelfRelations: allowSelfRelations ?? false,
+
+        assetsEnabled: enableAssetsInput ? true : false,
+        allowedExtensions,
         enableAssetsInput
     } %}
 
@@ -163,3 +158,11 @@
         new {{ jsClass }}({{ jsSettings|json_encode|raw }});
     {% endjs %}
 {% endif %}
+
+{# Not sure if we still need these: #}
+{#
+single: single,
+showSiteMenu: showSiteMenu ?? false,
+sortable: sortable,
+showActionMenu: showActionMenu,
+#}

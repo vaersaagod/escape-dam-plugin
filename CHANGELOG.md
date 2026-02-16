@@ -4,9 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## 3.1.0 - 2026-02-16
 ### Added
 - Added the `escapedam/api/file-usage` endpoint
+- Fixed Craft 5.9 compatibility issues 
 ### Changed
 - For very large source images, a 2500px transform will be downloaded instead of the original when importing files from the DAM
 - Escape DAM now uses its own log file
