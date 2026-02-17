@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.1.1 - 2026-02-17
+### Fixed
+- Fixed a bug w/ multisite installs on 5.9+
+
 ## 3.1.0 - 2026-02-16
 ### Added
 - Added the `escapedam/api/file-usage` endpoint

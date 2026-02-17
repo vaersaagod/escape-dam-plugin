@@ -26,14 +26,14 @@ class Files extends Component
      * @param int|null $elementId
      * @throws \Exception
      */
-    public function getFolderForImportByFieldAndElement(int $fieldId, int $elementId = null): ?VolumeFolder
+    public function getFolderForImportByFieldAndElement(int $fieldId, int $elementId = null, int $siteId = null): ?VolumeFolder
     {
         /** @var EscapeDamField $field */
         $field = Craft::$app->getFields()->getFieldById($fieldId);
         if (!$field instanceof EscapeDamField) {
             throw new \Exception('The field provided is not an Escape DAM field');
         }
-        $element = $elementId ? Craft::$app->getElements()->getElementById($elementId) : null;
+        $element = $elementId ? Craft::$app->getElements()->getElementById($elementId, siteId: $siteId) : null;
         $folderId = $field->getImportFolderId($element);
         if (empty($folderId)) {
             return null;
@@ -71,7 +71,7 @@ class Files extends Component
         }
 
         if ($elementId) {
-            $element = Craft::$app->getElements()->getElementById($elementId);
+            $element = Craft::$app->getElements()->getElementById($elementId, siteId: $siteId);
             if (!$element) {
                 throw new \Exception("Element ID $elementId not found");
             }
@@ -85,7 +85,7 @@ class Files extends Component
         if ($folderId) {
             $folder = $assets->findFolder(['id' => $folderId]);
         } else {
-            $folder = $this->getFolderForImportByFieldAndElement($fieldId, $elementId);
+            $folder = $this->getFolderForImportByFieldAndElement($fieldId, $elementId, $siteId);
         }
 
         if (!$folder) {
