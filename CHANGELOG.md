@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.2.1 - 2026-02-25
+### Changed
+- Removed `"minimum-stability": "dev"` from `composer.json`
+- Removed `composer.lock` from repo
+
 ## 3.2.0 - 2026-02-25
 ### Changed
 - Bumped the requirement for `firebase/php-jwt` to `^7.0`
