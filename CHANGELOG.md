@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.5.0 - 2026-03-13
+### Changed
+- Allow `^7.0` for `firebase/php-jwt`
+
 ## 2.4.1 - 2025-05-30
 ### Fixed
 - Fixed a bug where the selected "Import Location" wasn't selected in field setting forms

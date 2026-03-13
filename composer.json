@@ -2,8 +2,9 @@
     "name": "escape/escapedam",
     "description": "Escape DAM integration",
     "type": "craft-plugin",
-    "version": "2.4.1",
-    "keywords": [
+    "version": "2.5.0",
+    "keywords":
+    [
         "craft",
         "cms",
         "craftcms",
@@ -11,40 +12,49 @@
         "escape dam"
     ],
     "license": "MIT",
-    "authors": [
+    "authors":
+    [
         {
             "name": "Værsågod",
             "homepage": "https://vaersaagod.no"
         }
     ],
-    "require": {
+    "require":
+    {
         "php": "^8.1.12",
         "craftcms/cms": "^4.4",
-        "firebase/php-jwt": "^v6.3.2"
+        "firebase/php-jwt": "^v6.3.2||^7.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
-    "config": {
-        "platform": {
+    "config":
+    {
+        "platform":
+        {
             "php": "8.1.12"
         },
-        "allow-plugins": {
+        "allow-plugins":
+        {
             "yiisoft/yii2-composer": true,
             "craftcms/plugin-installer": true
         }
     },
-    "autoload": {
-        "psr-4": {
-          "escape\\escapedam\\": "src/"
+    "autoload":
+    {
+        "psr-4":
+        {
+            "escape\\escapedam\\": "src/"
         }
     },
-    "extra": {
+    "extra":
+    {
         "name": "Escape DAM",
         "handle": "escapedam",
         "changelogUrl": "",
         "class": "escape\\escapedam\\EscapeDam"
     },
-    "require-dev": {
+    "require-dev":
+    {
         "craftcms/rector": "dev-main"
     }
 }
