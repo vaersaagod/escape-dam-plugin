@@ -41,9 +41,15 @@ Craft.EscapeDam.EscapeDamSelectorModal = Garnish.Modal.extend({
         var eventer = window[eventMethod];
         var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
 
+        var damOrigin = new URL(damUrl, window.location.href).origin;
+
         // Listen to message from child window
         eventer(messageEvent, $.proxy(function (e) {
             if (!this.visible) {
+                return;
+            }
+            // Only listen to the DAM in this modal's iframe
+            if (e.origin !== damOrigin || e.source !== this.$iframe[0].contentWindow) {
                 return;
             }
             var data = e.data || {};

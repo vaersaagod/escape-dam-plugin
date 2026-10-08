@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Unreleased
+### Security
+- Hardened the plugin's endpoints, file downloads and control panel scripts
+### Changed
+- Importing files from the DAM now requires permission to save assets in the field's import location
+- The hls.js and Mux Player scripts are now loaded at pinned versions
+- Requests to the DAM API now time out after 30 seconds
+
 ## 3.2.1 - 2026-02-25
 ### Changed
 - Removed `"minimum-stability": "dev"` from `composer.json`

@@ -6,6 +6,7 @@ use craft\web\Controller;
 
 use escape\escapedam\EscapeDam;
 
+use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
 /**
@@ -31,13 +32,31 @@ class FilesController extends Controller
         $request = Craft::$app->getRequest();
 
         $fileId = (int)$request->getRequiredParam('fileId');
-        $folderId = (int)$request->getParam('folderId') ?: null;
-        $fieldId = (int)$request->getParam('fieldId') ?: null;
+        $fieldId = (int)$request->getRequiredParam('fieldId');
         $siteId = (int)$request->getParam('siteId') ?: null;
         $elementId = (int)$request->getParam('elementId') ?: null;
 
+        $files = EscapeDam::getInstance()->files;
+
+        // Files are always imported to the field's import folder, and only by users who can save assets there.
+        // For new elements that's the user's own temporary upload folder, which has no volume
         try {
-            $asset = EscapeDam::getInstance()->files->importFile($fileId, $fieldId, $elementId, $siteId, $folderId);
+            $folder = $files->getFolderForImportByFieldAndElement($fieldId, $elementId, $siteId);
+        } catch (\Throwable $e) {
+            Craft::error($e, __METHOD__);
+            return $this->asFailure($e->getMessage());
+        }
+
+        if (!$folder) {
+            throw new BadRequestHttpException('The field has no import folder');
+        }
+
+        if ($folder->volumeId) {
+            $this->requirePermission("saveAssets:{$folder->getVolume()->uid}");
+        }
+
+        try {
+            $asset = $files->importFile($fileId, $fieldId, $elementId, $siteId, $folder->id);
         } catch (\Throwable $e) {
             Craft::error($e, __METHOD__);
             return $this->asFailure($e->getMessage());

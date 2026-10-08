@@ -14,6 +14,7 @@ class TokenController extends Controller
      */
     public function actionGetToken()
     {
+        $this->requirePermission('accessCp');
         return EscapeDam::getInstance()->users->getDamToken();
     }
 }

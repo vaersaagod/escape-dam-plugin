@@ -15,15 +15,25 @@ class UtilityController extends Controller
 {
 
     /**
+     * Both actions change data, so they're only for users with access to the utility, and only as POST requests from the CP
+     *
+     * @inheritdoc
+     */
+    public function beforeAction($action): bool
+    {
+        $this->requireCpRequest();
+        $this->requirePostRequest();
+        $this->requirePermission('utility:escapedam');
+        return parent::beforeAction($action);
+    }
+
+    /**
      * @return \yii\web\Response|null
      * @throws BadRequestHttpException
      * @throws \craft\errors\MissingComponentException
      */
     public function actionFixMissingImportedFileRecords()
     {
-
-        $this->requirePostRequest();
-        $this->requireCpRequest();
 
         $volumeId = (int)Craft::$app->getRequest()->getRequiredBodyParam('volumeId');
         $volume = Craft::$app->getVolumes()->getVolumeById($volumeId);

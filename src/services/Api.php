@@ -46,6 +46,8 @@ class Api extends Component
         if ($this->client === null) {
             $this->client = Craft::createGuzzleClient([
                 'base_uri' => \rtrim($settings->damUrl, '/') . '/',
+                'connect_timeout' => 10,
+                'timeout' => 30,
             ]);
         }
     }

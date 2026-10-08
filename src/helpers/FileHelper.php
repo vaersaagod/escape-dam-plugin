@@ -25,6 +25,11 @@ final class FileHelper
             throw new \Exception('Curl not installed');
         }
 
+        // The URL comes from the DAM API, so only ever download over HTTPS, redirects included
+        if (\strtolower((string)\parse_url((string)$fileUrl, PHP_URL_SCHEME)) !== 'https') {
+            throw new \Exception("File url must be an HTTPS URL");
+        }
+
         $ch = curl_init($fileUrl);
         $fp = fopen($filePath, "wb");
 
@@ -32,6 +37,10 @@ final class FileHelper
             CURLOPT_FILE => $fp,
             CURLOPT_HEADER => 0,
             CURLOPT_FOLLOWLOCATION => 1,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT => 60,
             CURLOPT_REFERER => Craft::$app->getSites()->getPrimarySite()->getBaseUrl(),
         ];

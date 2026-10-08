@@ -313,14 +313,6 @@ class EscapeDam extends Plugin
                 $event->rules[$cpSectionPath] = ['template' => 'escapedam/_index'];
             }
         );
-
-        Event::on(
-            UrlManager::class,
-            UrlManager::EVENT_REGISTER_SITE_URL_RULES,
-            static function (RegisterUrlRulesEvent $event) {
-                $event->rules['escapedam/api/file-usage'] = 'escapedam/api/file-usage';
-            }
-        );
     }
 
     /**
